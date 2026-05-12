@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query'
+  target = 'react'
+  output = './app/lib/hooks'
+}
+// ==========================================
+// Tabelas do BetterAuth (Necessárias)
+// ==========================================
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+    
+  // Relacionamento com veículos no ZenStack (multi-tenancy)
+  vehicles      Vehicle[]
+
+  // O próprio usuário pode ler ou atualizar o seu perfil
+  @@allow('read,update', auth() == this)
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@allow('all', auth().id == userId)
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@allow('all', auth().id == userId)
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@allow('all', true)
+}
+
+// ==========================================
+// Domínio da Aplicação: CarTool
+// ==========================================
+model Vehicle {
+  id            String   @id @default(cuid())
+  brand         String
+  model         String
+  year          Int
+  purchasePrice Float?
+  initialKm     Int
+  currentKm     Int
+  fipeCode      String?
+  notes         String?
+
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // ZenStack Policy: apenas o dono pode ver/gerenciar seus próprios veículos
+  @@allow('all', auth().id == userId)
+}
