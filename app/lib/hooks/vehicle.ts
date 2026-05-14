@@ -327,7 +327,7 @@ export function useSuspenseCountVehicle<TArgs extends Prisma.VehicleCountArgs, T
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('Vehicle', `${endpoint}/vehicle/count`, args, options, fetch);
 }
 
-export function useCheckVehicle<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; brand?: string; model?: string; year?: number; initialKm?: number; currentKm?: number; fipeCode?: string; notes?: string; userId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckVehicle<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; type?: string; brand?: string; model?: string; year?: number; modelYear?: number; initialKm?: number; currentKm?: number; fipeCode?: string; notes?: string; userId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('Vehicle', `${endpoint}/vehicle/check`, args, options, fetch);
 }

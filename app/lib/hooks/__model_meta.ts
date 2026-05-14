@@ -54,6 +54,12 @@ const metadata: ModelMeta = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'user',
+                }, maintenanceCategories: {
+                    name: "maintenanceCategories",
+                    type: "MaintenanceCategory",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'user',
                 },
             }, uniqueConstraints: {
                 id: {
@@ -224,6 +230,10 @@ const metadata: ModelMeta = {
                     type: "String",
                     isId: true,
                     attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, type: {
+                    name: "type",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": "Carro" }] }],
                 }, brand: {
                     name: "brand",
                     type: "String",
@@ -233,9 +243,21 @@ const metadata: ModelMeta = {
                 }, year: {
                     name: "year",
                     type: "Int",
+                }, modelYear: {
+                    name: "modelYear",
+                    type: "Int",
+                    isOptional: true,
                 }, purchasePrice: {
                     name: "purchasePrice",
                     type: "Float",
+                    isOptional: true,
+                }, purchaseDate: {
+                    name: "purchaseDate",
+                    type: "DateTime",
+                    isOptional: true,
+                }, saleDate: {
+                    name: "saleDate",
+                    type: "DateTime",
                     isOptional: true,
                 }, initialKm: {
                     name: "initialKm",
@@ -264,6 +286,219 @@ const metadata: ModelMeta = {
                     isRelationOwner: true,
                     onDeleteAction: 'Cascade',
                     foreignKeyMapping: { "id": "userId" },
+                }, technicalInfos: {
+                    name: "technicalInfos",
+                    type: "TechnicalInfo",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'vehicle',
+                }, maintenanceRecords: {
+                    name: "maintenanceRecords",
+                    type: "MaintenanceRecord",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'vehicle',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        maintenanceCategory: {
+            name: 'MaintenanceCategory', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, name: {
+                    name: "name",
+                    type: "String",
+                }, userId: {
+                    name: "userId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'user',
+                }, user: {
+                    name: "user",
+                    type: "User",
+                    isDataModel: true,
+                    backLink: 'maintenanceCategories',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "userId" },
+                }, technicalInfos: {
+                    name: "technicalInfos",
+                    type: "TechnicalInfo",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'category',
+                }, maintenanceRecords: {
+                    name: "maintenanceRecords",
+                    type: "MaintenanceRecord",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'category',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        technicalInfo: {
+            name: 'TechnicalInfo', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, description: {
+                    name: "description",
+                    type: "String",
+                }, kmInterval: {
+                    name: "kmInterval",
+                    type: "Int",
+                    isOptional: true,
+                }, timeIntervalMonths: {
+                    name: "timeIntervalMonths",
+                    type: "Int",
+                    isOptional: true,
+                }, categoryId: {
+                    name: "categoryId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'category',
+                }, category: {
+                    name: "category",
+                    type: "MaintenanceCategory",
+                    isDataModel: true,
+                    backLink: 'technicalInfos',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "categoryId" },
+                }, vehicleId: {
+                    name: "vehicleId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'vehicle',
+                }, vehicle: {
+                    name: "vehicle",
+                    type: "Vehicle",
+                    isDataModel: true,
+                    backLink: 'technicalInfos',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "vehicleId" },
+                }, maintenanceRecords: {
+                    name: "maintenanceRecords",
+                    type: "MaintenanceRecord",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'technicalInfo',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        maintenanceRecord: {
+            name: 'MaintenanceRecord', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, date: {
+                    name: "date",
+                    type: "DateTime",
+                }, kmAtService: {
+                    name: "kmAtService",
+                    type: "Int",
+                }, description: {
+                    name: "description",
+                    type: "String",
+                }, cost: {
+                    name: "cost",
+                    type: "Float",
+                    isOptional: true,
+                }, nextDate: {
+                    name: "nextDate",
+                    type: "DateTime",
+                    isOptional: true,
+                }, nextKm: {
+                    name: "nextKm",
+                    type: "Int",
+                    isOptional: true,
+                }, technicalInfoId: {
+                    name: "technicalInfoId",
+                    type: "String",
+                    isOptional: true,
+                    isForeignKey: true,
+                    relationField: 'technicalInfo',
+                }, technicalInfo: {
+                    name: "technicalInfo",
+                    type: "TechnicalInfo",
+                    isDataModel: true,
+                    isOptional: true,
+                    backLink: 'maintenanceRecords',
+                    isRelationOwner: true,
+                    onDeleteAction: 'SetNull',
+                    foreignKeyMapping: { "id": "technicalInfoId" },
+                }, categoryId: {
+                    name: "categoryId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'category',
+                }, category: {
+                    name: "category",
+                    type: "MaintenanceCategory",
+                    isDataModel: true,
+                    backLink: 'maintenanceRecords',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "categoryId" },
+                }, vehicleId: {
+                    name: "vehicleId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'vehicle',
+                }, vehicle: {
+                    name: "vehicle",
+                    type: "Vehicle",
+                    isDataModel: true,
+                    backLink: 'maintenanceRecords',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "vehicleId" },
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -283,7 +518,9 @@ const metadata: ModelMeta = {
 
     },
     deleteCascade: {
-        user: ['Session', 'Account', 'Vehicle'],
+        user: ['Session', 'Account', 'Vehicle', 'MaintenanceCategory'],
+        vehicle: ['TechnicalInfo', 'MaintenanceRecord'],
+        maintenanceCategory: ['TechnicalInfo'],
 
     },
     authModel: 'User'

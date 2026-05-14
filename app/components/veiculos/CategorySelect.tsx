@@ -1,0 +1,122 @@
+import { useSession } from "@/app/lib/auth-client";
+import { useCreateMaintenanceCategory, useFindManyMaintenanceCategory } from "@/app/lib/hooks";
+import { Combobox, InputBase, Loader, useCombobox } from "@mantine/core";
+import { useState } from "react";
+
+interface CategorySelectProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  error?: string;
+}
+
+export function CategorySelect({ value, onChange, error }: CategorySelectProps) {
+  const combobox = useCombobox({
+    onDropdownClose: () => combobox.resetSelectedOption(),
+  });
+
+  const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+  
+  const { data: categories } = useFindManyMaintenanceCategory();
+  const createCategory = useCreateMaintenanceCategory();
+
+  const optionsData = categories?.map((c) => ({ value: c.id, label: c.name })) || [];
+  
+  const exactOptionMatch = optionsData.some((item) => item.label === search);
+  
+  const filteredOptions = optionsData.filter((item) =>
+    item.label.toLowerCase().includes(search.toLowerCase().trim())
+  );
+
+  const options = filteredOptions.map((item) => (
+    <Combobox.Option value={item.value} key={item.value}>
+      {item.label}
+    </Combobox.Option>
+  ));
+
+  const selectedOption = optionsData.find((item) => item.value === value);
+
+  const { data: session } = useSession();
+  const handleCreate = async () => {
+    if (!search.trim() || !session?.user.id || creating) return;
+    
+    setCreating(true);
+    try {
+      const newCategory = await createCategory.mutateAsync({
+        data: { 
+          name: search.trim(),
+          userId: session.user.id
+        },
+      });
+      onChange(newCategory.id);
+      setSearch(newCategory.name);
+      combobox.closeDropdown();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Combobox
+      store={combobox}
+      withinPortal={false}
+      onOptionSubmit={(val) => {
+        if (val === "$create") {
+          handleCreate();
+        } else {
+          onChange(val);
+          const selected = optionsData.find((item) => item.value === val);
+          setSearch(selected?.label || "");
+          combobox.closeDropdown();
+        }
+      }}
+    >
+      <Combobox.Target>
+        <InputBase
+          label="Categoria"
+          placeholder="Selecione ou crie uma categoria"
+          value={search}
+          onChange={(event) => {
+            combobox.openDropdown();
+            combobox.updateSelectedOptionIndex();
+            setSearch(event.currentTarget.value);
+            if (value) {
+              onChange(null); // Clear selection if typing
+            }
+          }}
+          onClick={() => combobox.openDropdown()}
+          onFocus={() => combobox.openDropdown()}
+          onBlur={() => {
+            combobox.closeDropdown();
+            if (!value) {
+              setSearch("");
+            } else {
+              setSearch(selectedOption?.label || "");
+            }
+          }}
+          error={error}
+          withAsterisk
+          rightSection={creating ? <Loader size={18} /> : null}
+          disabled={creating}
+        />
+      </Combobox.Target>
+
+      <Combobox.Dropdown>
+        <Combobox.Options>
+          {options}
+          {!exactOptionMatch && search.trim().length > 0 && (
+            <Combobox.Option value="$create" disabled={creating}>
+              {creating ? "Criando..." : `+ Criar "${search}"`}
+            </Combobox.Option>
+          )}
+
+          {options.length === 0 && !search.trim() && (
+            <Combobox.Empty>Nada encontrado</Combobox.Empty>
+          )}
+        </Combobox.Options>
+      </Combobox.Dropdown>
+    </Combobox>
+  );
+}

@@ -14,16 +14,17 @@ generator client {
 }
 
 model User {
-  id            String    @id() @default(cuid())
-  name          String
-  email         String    @unique()
-  emailVerified Boolean
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt()
-  sessions      Session[]
-  accounts      Account[]
-  vehicles      Vehicle[]
+  id                    String                @id() @default(cuid())
+  name                  String
+  email                 String                @unique()
+  emailVerified         Boolean
+  image                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt()
+  sessions              Session[]
+  accounts              Account[]
+  vehicles              Vehicle[]
+  maintenanceCategories MaintenanceCategory[]
 }
 
 model Session {
@@ -65,17 +66,66 @@ model Verification {
 }
 
 model Vehicle {
-  id            String   @id() @default(cuid())
-  brand         String
-  model         String
-  year          Int
-  purchasePrice Float?
-  initialKm     Int
-  currentKm     Int
-  fipeCode      String?
-  notes         String?
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt()
+  id                 String              @id() @default(cuid())
+  type               String              @default("Carro")
+  brand              String
+  model              String
+  year               Int
+  modelYear          Int?
+  purchasePrice      Float?
+  purchaseDate       DateTime?
+  saleDate           DateTime?
+  initialKm          Int
+  currentKm          Int
+  fipeCode           String?
+  notes              String?
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technicalInfos     TechnicalInfo[]
+  maintenanceRecords MaintenanceRecord[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt()
+}
+
+model MaintenanceCategory {
+  id                 String              @id() @default(cuid())
+  name               String
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technicalInfos     TechnicalInfo[]
+  maintenanceRecords MaintenanceRecord[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt()
+}
+
+model TechnicalInfo {
+  id                 String              @id() @default(cuid())
+  description        String
+  kmInterval         Int?
+  timeIntervalMonths Int?
+  categoryId         String
+  category           MaintenanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  vehicleId          String
+  vehicle            Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  maintenanceRecords MaintenanceRecord[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt()
+}
+
+model MaintenanceRecord {
+  id              String              @id() @default(cuid())
+  date            DateTime
+  kmAtService     Int
+  description     String
+  cost            Float?
+  nextDate        DateTime?
+  nextKm          Int?
+  technicalInfoId String?
+  technicalInfo   TechnicalInfo?      @relation(fields: [technicalInfoId], references: [id], onDelete: SetNull)
+  categoryId      String
+  category        MaintenanceCategory @relation(fields: [categoryId], references: [id])
+  vehicleId       String
+  vehicle         Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt()
 }

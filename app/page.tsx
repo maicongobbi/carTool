@@ -4,17 +4,11 @@ import { signIn, useSession } from "@/app/lib/auth-client";
 import { Button, Center, Container, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function LoginPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    if (session) {
-      router.push("/dashboard");
-    }
-  }, [session, router]);
 
   if (isPending || session) {
     return (
@@ -31,7 +25,7 @@ export default function LoginPage() {
           <Title order={1}>🚗 Vehicle Care Tracker</Title>
           <Text size="lg" c="dimmed">Para continuar, faça login com sua conta Google.</Text>
           <Button
-            onClick={() => signIn.social({ provider: "google", callbackURL: "/dashboard" })}
+            onClick={() => signIn.social({ provider: "google", callbackURL: "/home" })}
             size="lg"
             mt="md"
             leftSection={<IconBrandGoogle size={20} />}

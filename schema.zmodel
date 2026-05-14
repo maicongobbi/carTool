@@ -29,6 +29,7 @@ model User {
     
   // Relacionamento com veículos no ZenStack (multi-tenancy)
   vehicles      Vehicle[]
+  maintenanceCategories MaintenanceCategory[]
 
   // O próprio usuário pode ler ou atualizar o seu perfil
   @@allow('read,update', auth() == this)
@@ -83,10 +84,14 @@ model Verification {
 // ==========================================
 model Vehicle {
   id            String   @id @default(cuid())
+  type          String   @default("Carro")
   brand         String
   model         String
   year          Int
+  modelYear     Int?
   purchasePrice Float?
+  purchaseDate  DateTime?
+  saleDate      DateTime?
   initialKm     Int
   currentKm     Int
   fipeCode      String?
@@ -94,10 +99,73 @@ model Vehicle {
 
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  technicalInfos     TechnicalInfo[]
+  maintenanceRecords MaintenanceRecord[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // ZenStack Policy: apenas o dono pode ver/gerenciar seus próprios veículos
   @@allow('all', auth().id == userId)
+}
+
+model MaintenanceCategory {
+  id            String   @id @default(cuid())
+  name          String
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  technicalInfos     TechnicalInfo[]
+  maintenanceRecords MaintenanceRecord[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@allow('all', auth().id == userId)
+}
+
+model TechnicalInfo {
+  id                 String   @id @default(cuid())
+  description        String
+  kmInterval         Int?
+  timeIntervalMonths Int?
+  
+  categoryId         String
+  category           MaintenanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  vehicleId          String
+  vehicle            Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  maintenanceRecords MaintenanceRecord[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@allow('all', vehicle.userId == auth().id)
+}
+
+model MaintenanceRecord {
+  id              String    @id @default(cuid())
+  date            DateTime
+  kmAtService     Int
+  description     String
+  cost            Float?
+  nextDate        DateTime?
+  nextKm          Int?
+
+  // Referência opcional a um item do plano de manutenção
+  technicalInfoId String?
+  technicalInfo   TechnicalInfo? @relation(fields: [technicalInfoId], references: [id], onDelete: SetNull)
+
+  // Categoria (obrigatória)
+  categoryId      String
+  category        MaintenanceCategory @relation(fields: [categoryId], references: [id])
+
+  vehicleId       String
+  vehicle         Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@allow('all', vehicle.userId == auth().id)
 }
