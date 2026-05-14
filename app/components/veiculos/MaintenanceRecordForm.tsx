@@ -80,11 +80,11 @@ export function MaintenanceRecordForm({
     try {
       await createRecord.mutateAsync({
         data: {
-          date: values.date!.toISOString(),
+          date: new Date(values.date!).toISOString(),
           kmAtService: values.kmAtService,
           description: values.description,
           cost: values.cost,
-          nextDate: values.nextDate ? values.nextDate.toISOString() : undefined,
+          nextDate: values.nextDate ? new Date(values.nextDate).toISOString() : undefined,
           nextKm: values.nextKm,
           categoryId: values.categoryId!,
           vehicleId,

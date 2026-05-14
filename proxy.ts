@@ -1,22 +1,30 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+// BetterAuth usa "better-auth.session_token" em HTTP local
+// e "__Secure-better-auth.session_token" em HTTPS (produção)
+function getSessionToken(request: NextRequest): string | undefined {
+  return (
+    request.cookies.get("better-auth.session_token")?.value ??
+    request.cookies.get("__Secure-better-auth.session_token")?.value
+  );
+}
+
+const PROTECTED_PREFIXES = ["/home", "/veiculos", "/dashboard"];
+
 export function proxy(request: NextRequest) {
-  // Verifica o cookie de sessão padrão gerado pelo BetterAuth
-  const sessionToken = request.cookies.get("better-auth.session_token")?.value;
+  const { pathname } = request.nextUrl;
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
-  // Se tentar acessar as rotas protegidas sem sessão, redireciona para o login
-  if (!sessionToken && request.nextUrl.pathname.startsWith("/home")) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (!sessionToken && request.nextUrl.pathname.startsWith("/veiculos")) {
-    return NextResponse.redirect(new URL("/", request.url));
+  if (isProtected && !getSessionToken(request)) {
+    const loginUrl = new URL("/", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/home", "/home/:path*", "/veiculos/:path*"],
+  matcher: ["/home/:path*", "/veiculos/:path*", "/dashboard/:path*"],
 };
