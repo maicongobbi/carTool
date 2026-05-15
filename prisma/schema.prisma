@@ -120,6 +120,9 @@ model MaintenanceRecord {
   cost            Float?
   nextDate        DateTime?
   nextKm          Int?
+  observations    String?
+  attachments     String[]
+  ignored         Boolean             @default(false)
   technicalInfoId String?
   technicalInfo   TechnicalInfo?      @relation(fields: [technicalInfoId], references: [id], onDelete: SetNull)
   categoryId      String

@@ -152,6 +152,9 @@ model MaintenanceRecord {
   cost            Float?
   nextDate        DateTime?
   nextKm          Int?
+  observations    String?
+  attachments     String[]
+  ignored         Boolean @default(false)
 
   // Referência opcional a um item do plano de manutenção
   technicalInfoId String?

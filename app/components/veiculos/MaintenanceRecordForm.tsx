@@ -10,7 +10,11 @@ import {
   Switch,
   Text,
   TextInput,
+  Textarea,
+  FileInput,
 } from "@mantine/core";
+import { IconUpload } from "@tabler/icons-react";
+import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
 import { useState } from "react";
@@ -33,6 +37,7 @@ export function MaintenanceRecordForm({
   const createRecord = useCreateMaintenanceRecord();
   const [loading, setLoading] = useState(false);
   const [useReference, setUseReference] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   const { data: technicalInfos } = useFindManyTechnicalInfo({
     where: { vehicleId },
@@ -49,6 +54,7 @@ export function MaintenanceRecordForm({
       nextKm: undefined as number | undefined,
       categoryId: null as string | null,
       technicalInfoId: null as string | null,
+      observations: "",
     },
     validate: {
       date: (v) => (!v ? "Data obrigatória" : null),
@@ -71,13 +77,58 @@ export function MaintenanceRecordForm({
       if (found) {
         form.setFieldValue("description", found.description);
         form.setFieldValue("categoryId", found.categoryId);
+        
+        if (found.kmInterval) {
+          form.setFieldValue("nextKm", form.values.kmAtService + found.kmInterval);
+        } else {
+          form.setFieldValue("nextKm", undefined);
+        }
+
+        if (found.timeIntervalMonths) {
+          const maintenanceDate = form.values.date || new Date();
+          const nextD = new Date(maintenanceDate);
+          nextD.setMonth(nextD.getMonth() + found.timeIntervalMonths);
+          form.setFieldValue("nextDate", nextD);
+        } else {
+          form.setFieldValue("nextDate", null);
+        }
       }
+    } else {
+      form.setFieldValue("description", "");
+      form.setFieldValue("categoryId", null);
+      form.setFieldValue("nextKm", undefined);
+      form.setFieldValue("nextDate", null);
     }
   };
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
+      const uploadedUrls: string[] = [];
+      
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `${vehicleId}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('maintenance-attachments')
+            .upload(filePath, file);
+
+          if (uploadError) {
+             console.error("Upload error", uploadError);
+             throw new Error("Erro ao fazer upload do anexo");
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('maintenance-attachments')
+            .getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
       await createRecord.mutateAsync({
         data: {
           date: new Date(values.date!).toISOString(),
@@ -88,6 +139,8 @@ export function MaintenanceRecordForm({
           nextKm: values.nextKm,
           categoryId: values.categoryId!,
           vehicleId,
+          observations: values.observations || undefined,
+          attachments: uploadedUrls,
           ...(values.technicalInfoId ? { technicalInfoId: values.technicalInfoId } : {}),
         },
       });
@@ -129,6 +182,8 @@ export function MaintenanceRecordForm({
                 form.setFieldValue("technicalInfoId", null);
                 form.setFieldValue("description", "");
                 form.setFieldValue("categoryId", null);
+                form.setFieldValue("nextKm", undefined);
+                form.setFieldValue("nextDate", null);
               }
             }}
           />
@@ -169,6 +224,31 @@ export function MaintenanceRecordForm({
           fixedDecimalScale
           hideControls
           {...form.getInputProps("cost")}
+        />
+
+        <Textarea
+          label="Observações"
+          placeholder="Anotações adicionais sobre o serviço"
+          minRows={3}
+          {...form.getInputProps("observations")}
+        />
+
+        <FileInput
+          label="Anexos (Notas Fiscais, Fotos)"
+          placeholder="Selecione até 5 arquivos"
+          multiple
+          accept="image/png,image/jpeg,application/pdf"
+          leftSection={<IconUpload size={14} />}
+          value={files}
+          onChange={(payload) => {
+            if (payload.length > 5) {
+              alert("Você só pode anexar até 5 arquivos por manutenção.");
+              setFiles(payload.slice(0, 5));
+            } else {
+              setFiles(payload);
+            }
+          }}
+          clearable
         />
 
         <Divider label="Próxima Manutenção (opcional)" />

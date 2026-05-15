@@ -459,6 +459,18 @@ const metadata: ModelMeta = {
                     name: "nextKm",
                     type: "Int",
                     isOptional: true,
+                }, observations: {
+                    name: "observations",
+                    type: "String",
+                    isOptional: true,
+                }, attachments: {
+                    name: "attachments",
+                    type: "String",
+                    isArray: true,
+                }, ignored: {
+                    name: "ignored",
+                    type: "Boolean",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": false }] }],
                 }, technicalInfoId: {
                     name: "technicalInfoId",
                     type: "String",

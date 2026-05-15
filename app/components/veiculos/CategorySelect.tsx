@@ -48,8 +48,10 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
           userId: session.user.id
         },
       });
-      onChange(newCategory.id);
-      setSearch(newCategory.name);
+      if (newCategory) {
+        onChange(newCategory.id);
+        setSearch(newCategory.name);
+      }
       combobox.closeDropdown();
     } catch (e) {
       console.error(e);

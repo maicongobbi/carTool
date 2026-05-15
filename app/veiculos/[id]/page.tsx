@@ -1,33 +1,43 @@
 "use client";
 
-import { useFindUniqueVehicle, useUpdateVehicle } from "@/app/lib/hooks";
+import { useFindUniqueVehicle, useUpdateVehicle, useCreateMaintenanceRecord, useUpdateMaintenanceRecord } from "@/app/lib/hooks";
 import {
   Badge,
   Button,
   Card,
+  Collapse,
   Container,
   Divider,
   Group,
   Loader,
   Modal,
   NumberInput,
+  SegmentedControl,
+  Select,
   SimpleGrid,
   Stack,
   Text,
+  TextInput,
   Title,
+  Alert,
 } from "@mantine/core";
+import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconArrowLeft,
   IconCheck,
+  IconChevronDown,
+  IconChevronUp,
   IconCoin,
   IconGauge,
   IconPlus,
+  IconSearch,
   IconSettings,
   IconTag,
   IconTool,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { use, useState } from "react";
@@ -35,6 +45,7 @@ import { MaintenanceRecordCard } from "../../components/veiculos/MaintenanceReco
 import { MaintenanceRecordForm } from "../../components/veiculos/MaintenanceRecordForm";
 import { TechnicalInfoCard } from "../../components/veiculos/TechnicalInfoCard";
 import { TechnicalInfoForm } from "../../components/veiculos/TechnicalInfoForm";
+import { MaintenanceDetailsModal } from "../../components/veiculos/MaintenanceDetailsModal";
 
 export default function VeiculoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -55,11 +66,158 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   const [sellModalOpened, { open: openSellModal, close: closeSellModal }] = useDisclosure(false);
   const [techModalOpened, { open: openTechModal, close: closeTechModal }] = useDisclosure(false);
   const [maintModalOpened, { open: openMaintModal, close: closeMaintModal }] = useDisclosure(false);
+  const [detailsModalOpened, { open: openDetailsModal, close: closeDetailsModal }] = useDisclosure(false);
 
   const [saleDate, setSaleDate] = useState<Date | null>(null);
   const [savingSale, setSavingSale] = useState(false);
   const [newKm, setNewKm] = useState<number | string>("");
   const [savingKm, setSavingKm] = useState(false);
+
+  // Estados para Detalhes e Conclusão de Manutenção
+  const createRecord = useCreateMaintenanceRecord();
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [markAsDone, setMarkAsDone] = useState(false);
+  const [doneDate, setDoneDate] = useState<Date | null>(new Date());
+  const [doneKm, setDoneKm] = useState<number | string>("");
+  const [doneCost, setDoneCost] = useState<number | string>("");
+  const [doneObs, setDoneObs] = useState<string>("");
+  const [doneFiles, setDoneFiles] = useState<File[]>([]);
+  const [savingDone, setSavingDone] = useState(false);
+  const [ignoreRecord, setIgnoreRecord] = useState(false);
+  const [savingIgnore, setSavingIgnore] = useState(false);
+  // Suggested next values (editable)
+  const [suggestedNextKm, setSuggestedNextKm] = useState<number | string>("");
+  const [suggestedNextDate, setSuggestedNextDate] = useState<Date | null>(null);
+
+  const updateRecord = useUpdateMaintenanceRecord();
+
+  // UI state
+  const [planOpened, setPlanOpened] = useState(false);
+  const [search, setSearch] = useState("");
+  const [groupBy, setGroupBy] = useState<"list" | "category">("list");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+  const handleOpenDetails = (record: any) => {
+    setSelectedRecord(record);
+    setMarkAsDone(false);
+    setIgnoreRecord(false);
+    setDoneDate(new Date());
+    setDoneKm(vehicle?.currentKm ?? "");
+    setDoneCost("");
+    setDoneObs("");
+    setDoneFiles([]);
+
+    // Pre-fill suggested next values (editable)
+    const techInfo = (vehicle as any)?.technicalInfos?.find((t: any) => t.id === record.technicalInfoId);
+    if (record.nextKm) {
+      setSuggestedNextKm(record.nextKm);
+    } else if (techInfo?.kmInterval) {
+      setSuggestedNextKm((vehicle?.currentKm ?? 0) + techInfo.kmInterval);
+    } else {
+      setSuggestedNextKm("");
+    }
+    if (record.nextDate) {
+      setSuggestedNextDate(new Date(record.nextDate));
+    } else if (techInfo?.timeIntervalMonths) {
+      const nd = new Date();
+      nd.setMonth(nd.getMonth() + techInfo.timeIntervalMonths);
+      setSuggestedNextDate(nd);
+    } else {
+      setSuggestedNextDate(null);
+    }
+
+    openDetailsModal();
+  };
+
+  const handleIgnore = async () => {
+    if (!selectedRecord) return;
+    setSavingIgnore(true);
+    try {
+      await updateRecord.mutateAsync({
+        where: { id: selectedRecord.id },
+        data: { ignored: !selectedRecord.ignored },
+      });
+      notifications.show({ title: selectedRecord.ignored ? "Manutenção reativada" : "Manutenção ignorada", message: "", color: "blue" });
+      closeDetailsModal();
+      refetch();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingIgnore(false);
+    }
+  };
+
+  const handleSaveDone = async () => {
+    if (!selectedRecord || !doneDate || !doneKm) return;
+    setSavingDone(true);
+    try {
+      let nextKm: number | undefined = suggestedNextKm ? Number(suggestedNextKm) : undefined;
+      let nextDate: string | undefined = suggestedNextDate ? suggestedNextDate.toISOString() : undefined;
+
+      // Fall back to computing from technicalInfo if user didn't fill the suggestions
+      if (!nextKm && !nextDate && selectedRecord.technicalInfoId) {
+        const found = (vehicle as any).technicalInfos.find((t: any) => t.id === selectedRecord.technicalInfoId);
+        if (found) {
+          if (found.kmInterval) {
+            nextKm = Number(doneKm) + found.kmInterval;
+          }
+          if (found.timeIntervalMonths) {
+            const nd = new Date(doneDate);
+            nd.setMonth(nd.getMonth() + found.timeIntervalMonths);
+            nextDate = nd.toISOString();
+          }
+        }
+      }
+
+      const uploadedUrls: string[] = [];
+      if (doneFiles.length > 0) {
+        for (const file of doneFiles) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          const filePath = `${vehicle!.id}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('maintenance-attachments')
+            .upload(filePath, file);
+
+          if (uploadError) {
+             console.error("Upload error", uploadError);
+             throw new Error("Erro ao fazer upload do anexo");
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('maintenance-attachments')
+            .getPublicUrl(filePath);
+
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      await createRecord.mutateAsync({
+        data: {
+          date: doneDate.toISOString(),
+          kmAtService: Number(doneKm),
+          description: selectedRecord.description,
+          cost: doneCost ? Number(doneCost) : undefined,
+          observations: doneObs || undefined,
+          categoryId: selectedRecord.categoryId,
+          technicalInfoId: selectedRecord.technicalInfoId,
+          vehicleId: vehicle!.id,
+          nextKm,
+          nextDate,
+          attachments: uploadedUrls,
+        }
+      });
+      notifications.show({ title: "Manutenção registrada!", message: "Próximo ciclo agendado com sucesso.", color: "green" });
+      closeDetailsModal();
+      refetch();
+    } catch (e) {
+      console.error(e);
+      notifications.show({ title: "Erro", message: "Não foi possível salvar.", color: "red" });
+    } finally {
+      setSavingDone(false);
+    }
+  };
 
   const handleMarkAsSold = async () => {
     if (!saleDate) return;
@@ -122,6 +280,70 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   const kmRodados = vehicle.currentKm - vehicle.initialKm;
   const custoPorKm = kmRodados > 0 ? totalGasto / kmRodados : 0;
 
+  // ── Status de manutenções (4 níveis) ──────────────────────────────────────
+  type AlertStatus = "overdue" | "critical" | "warning" | "notice" | null;
+  type AlertReason = "km" | "data" | null;
+
+  const now = new Date();
+  const seenCategories = new Set<string>();
+  const latestByCategory: any[] = []; // apenas o mais recente de cada categoria
+
+  // records ordenados por data desc (já vem assim da query)
+  records.forEach((r: any) => {
+    if (!seenCategories.has(r.categoryId)) {
+      seenCategories.add(r.categoryId);
+
+      let status: AlertStatus = null;
+      let reason: AlertReason = null;
+
+      // Checar KM
+      if (r.nextKm && !r.ignored) {
+        const diffKm = r.nextKm - vehicle.currentKm;
+        if (diffKm <= 0)        { status = "overdue";  reason = "km"; }
+        else if (diffKm <= 500) { status = "critical"; reason = "km"; }
+        else if (diffKm <= 1000){ status = "warning";  reason = "km"; }
+        else if (diffKm <= 2000){ status = "notice";   reason = "km"; }
+      }
+
+      // Checar Data (sobrescreve apenas se mais grave)
+      if (r.nextDate && !r.ignored) {
+        const nextD = new Date(r.nextDate);
+        const diffDays = (nextD.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        let dateStatus: AlertStatus = null;
+        if (diffDays <= 0)        dateStatus = "overdue";
+        else if (diffDays <= 10)  dateStatus = "critical";
+        else if (diffDays <= 30)  dateStatus = "warning";
+        else if (diffDays <= 90)  dateStatus = "notice";
+
+        const severity = (s: AlertStatus) =>
+          s === "overdue" ? 4 : s === "critical" ? 3 : s === "warning" ? 2 : s === "notice" ? 1 : 0;
+
+        if (severity(dateStatus) > severity(status)) {
+          status = dateStatus;
+          reason = "data";
+        } else if (severity(dateStatus) === severity(status) && dateStatus !== null) {
+          reason = "km"; // km e data empatam - mantém km
+        }
+      }
+
+      r._alertStatus = status;
+      r._alertReason = reason;
+      latestByCategory.push(r);
+    }
+  });
+
+  const overdueRecords = latestByCategory.filter(r => r._alertStatus === "overdue" && !r.ignored);
+  
+  // 3 próximas a vencer (excluindo vencidas e ignoradas), ordenadas por urgência
+  const upcoming = latestByCategory
+    .filter(r => r._alertStatus && r._alertStatus !== "overdue" && !r.ignored)
+    .sort((a, b) => {
+      const scoreA = (a._alertStatus === "critical" ? 3 : a._alertStatus === "warning" ? 2 : 1);
+      const scoreB = (b._alertStatus === "critical" ? 3 : b._alertStatus === "warning" ? 2 : 1);
+      return scoreB - scoreA;
+    })
+    .slice(0, 3);
+
   return (
     <Container size="lg" py="xl">
       <Group mb="xl">
@@ -134,6 +356,45 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           Voltar para Home
         </Button>
       </Group>
+
+      {overdueRecords.length > 0 && (
+        <Alert variant="outline" color="red" title="Manutenções Vencidas" icon={<IconAlertTriangle />} mb="sm">
+          <Stack gap={6} mt={4}>
+            {overdueRecords.map(r => (
+              <Group key={r.id} justify="space-between" wrap="wrap" gap={4}>
+                <Text size="sm" fw={600}>{r.description} <Text span c="red.2">({r.category.name})</Text></Text>
+                <Group gap={6}>
+                  {r.nextKm && r.nextKm <= vehicle.currentKm && (
+                    <Badge color="red" variant="white" size="xs">KM: {r.nextKm.toLocaleString("pt-BR")}</Badge>
+                  )}
+                  {r.nextDate && new Date(r.nextDate) <= now && (
+                    <Badge color="red" variant="white" size="xs">Data: {new Date(r.nextDate).toLocaleDateString("pt-BR")}</Badge>
+                  )}
+                </Group>
+              </Group>
+            ))}
+          </Stack>
+        </Alert>
+      )}
+
+      {upcoming.length > 0 && (
+        <Alert variant="light" color="orange" title="Próximas Manutenções" icon={<IconAlertTriangle />} mb="xl">
+          <Stack gap={6} mt={4}>
+            {upcoming.map(r => (
+              <Group key={r.id} justify="space-between" wrap="wrap" gap={4}>
+                <Text size="sm" fw={500}>{r.description} <Text span c="dimmed">({r.category.name})</Text></Text>
+                <Group gap={6}>
+                  <Badge size="xs" color={r._alertStatus === "critical" ? "orange" : r._alertStatus === "warning" ? "yellow" : "gray"} variant="filled">
+                    {r._alertStatus === "critical" ? "Crítico" : r._alertStatus === "warning" ? "Atenção" : "Próxima"}
+                  </Badge>
+                  {r.nextKm && <Badge color="indigo" variant="light" size="xs">KM: {r.nextKm.toLocaleString("pt-BR")}</Badge>}
+                  {r.nextDate && <Badge color="violet" variant="light" size="xs">Data: {new Date(r.nextDate).toLocaleDateString("pt-BR")}</Badge>}
+                </Group>
+              </Group>
+            ))}
+          </Stack>
+        </Alert>
+      )}
 
       {/* ─── Card do Veículo ─── */}
       <Card withBorder padding="lg" radius="md" mb="xl" shadow="sm">
@@ -214,9 +475,11 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         <Group align="flex-end" gap="sm">
           <NumberInput
             label="Novo KM atual"
-            placeholder={`Atual: ${vehicle.currentKm.toLocaleString("pt-BR")}`}
+            description={`KM atual: ${vehicle.currentKm.toLocaleString("pt-BR")} km`}
+            placeholder="Informe o novo KM"
             hideControls
             suffix=" km"
+            min={vehicle.currentKm}
             value={newKm}
             onChange={setNewKm}
             style={{ flex: 1 }}
@@ -228,33 +491,39 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       </Card>
 
       {/* ─── Plano de Manutenção (Referência) ─── */}
-      <Group justify="space-between" mb="md">
+      <Group justify="space-between" mb="xs" style={{ cursor: "pointer" }} onClick={() => setPlanOpened(o => !o)}>
         <Group gap="xs">
           <IconSettings size={20} />
           <Title order={3}>Plano de Manutenção</Title>
+          {(vehicle as any).technicalInfos.length > 0 && (
+            <Badge variant="light" color="gray" size="sm">{(vehicle as any).technicalInfos.length}</Badge>
+          )}
         </Group>
-        <Button size="sm" leftSection={<IconPlus size={16} />} onClick={openTechModal}>
-          Adicionar Referência
-        </Button>
+        <Group gap="xs">
+          <Button size="sm" variant="subtle" leftSection={<IconPlus size={16} />} onClick={(e) => { e.stopPropagation(); openTechModal(); }}>
+            Adicionar
+          </Button>
+          {planOpened ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+        </Group>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="xl">
-        {(vehicle as any).technicalInfos.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            Nenhuma referência técnica cadastrada.
-          </Text>
-        ) : (
-          (vehicle as any).technicalInfos.map((info: any) => (
-            <TechnicalInfoCard
-              key={info.id}
-              description={info.description}
-              categoryName={info.category.name}
-              kmInterval={info.kmInterval}
-              timeIntervalMonths={info.timeIntervalMonths}
-            />
-          ))
-        )}
-      </SimpleGrid>
+      <Collapse expanded={planOpened} mb="xl">
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+          {(vehicle as any).technicalInfos.length === 0 ? (
+            <Text c="dimmed" size="sm">Nenhuma referência técnica cadastrada.</Text>
+          ) : (
+            (vehicle as any).technicalInfos.map((info: any) => (
+              <TechnicalInfoCard
+                key={info.id}
+                description={info.description}
+                categoryName={info.category.name}
+                kmInterval={info.kmInterval}
+                timeIntervalMonths={info.timeIntervalMonths}
+              />
+            ))
+          )}
+        </SimpleGrid>
+      </Collapse>
 
       {/* ─── Manutenções Realizadas ─── */}
       <Group justify="space-between" mb="md">
@@ -267,26 +536,113 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         </Button>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="xl">
-        {records.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            Nenhuma manutenção registrada ainda.
-          </Text>
-        ) : (
-          records.map((record: any) => (
-            <MaintenanceRecordCard
-              key={record.id}
-              date={record.date}
-              kmAtService={record.kmAtService}
-              description={record.description}
-              categoryName={record.category.name}
-              cost={record.cost}
-              nextDate={record.nextDate}
-              nextKm={record.nextKm}
-            />
-          ))
-        )}
-      </SimpleGrid>
+      {records.length > 0 && (
+        <Group mb="md" gap="sm" align="flex-end" wrap="wrap">
+          <TextInput
+            placeholder="Pesquisar manutenção..."
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            style={{ flex: 1, minWidth: 200 }}
+            size="sm"
+          />
+          <SegmentedControl
+            size="sm"
+            value={groupBy}
+            onChange={(v) => {
+              setGroupBy(v as "list" | "category");
+              setCategoryFilter(null);
+            }}
+            data={[
+              { label: "Lista", value: "list" },
+              { label: "Por categoria", value: "category" },
+            ]}
+          />
+          {groupBy === "category" && (() => {
+            const cats: { value: string; label: string }[] = Array.from(
+              new Map<string, string>(records.map((r: any) => [r.categoryId as string, r.category.name as string])).entries()
+            ).map(([value, label]) => ({ value, label }));
+            return (
+              <Select
+                size="sm"
+                placeholder="Todas as categorias"
+                clearable
+                data={cats}
+                value={categoryFilter}
+                onChange={(v) => setCategoryFilter(v)}
+                style={{ minWidth: 180 }}
+              />
+            );
+          })()}
+        </Group>
+      )}
+
+      {(() => {
+        if (records.length === 0) {
+          return <Text c="dimmed" size="sm">Nenhuma manutenção registrada ainda.</Text>;
+        }
+
+        const searchLower = search.toLowerCase();
+        const filtered: any[] = records.filter((r: any) =>
+          r.description.toLowerCase().includes(searchLower) ||
+          r.category.name.toLowerCase().includes(searchLower)
+        );
+
+        if (filtered.length === 0) {
+          return <Text c="dimmed" size="sm">Nenhum resultado para "{search}".</Text>;
+        }
+
+        const renderCard = (record: any) => (
+          <MaintenanceRecordCard
+            key={record.id}
+            date={record.date}
+            kmAtService={record.kmAtService}
+            description={record.description}
+            categoryName={record.category.name}
+            cost={record.cost}
+            nextDate={record.nextDate}
+            nextKm={record.nextKm}
+            alertStatus={record._alertStatus}
+            alertReason={record._alertReason}
+            ignored={record.ignored}
+            onClick={() => handleOpenDetails(record)}
+          />
+        );
+
+        if (groupBy === "list") {
+          return (
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="xl">
+              {filtered.map(renderCard)}
+            </SimpleGrid>
+          );
+        }
+
+        // Group by category — show only most recent per category (first in desc order)
+        const grouped = new Map<string, { categoryName: string; records: any[] }>();
+        filtered.forEach((r: any) => {
+          if (!grouped.has(r.categoryId)) {
+            grouped.set(r.categoryId, { categoryName: r.category.name, records: [] });
+          }
+          grouped.get(r.categoryId)!.records.push(r);
+        });
+
+        const groupEntries = categoryFilter
+          ? Array.from(grouped.entries()).filter(([id]) => id === categoryFilter)
+          : Array.from(grouped.entries());
+
+        return (
+          <Stack gap="lg" mb="xl">
+            {groupEntries.map(([, { categoryName, records: catRecords }]) => (
+              <div key={categoryName}>
+                <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb="xs">{categoryName}</Text>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  {catRecords.map(renderCard)}
+                </SimpleGrid>
+              </div>
+            ))}
+          </Stack>
+        );
+      })()}
 
       {/* ─── Modais ─── */}
       <Modal opened={sellModalOpened} onClose={closeSellModal} title="Marcar Veículo como Vendido">
@@ -295,7 +651,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           placeholder="Selecione a data"
           valueFormat="DD/MM/YYYY"
           value={saleDate}
-          onChange={setSaleDate}
+          onChange={(val) => setSaleDate(val as Date | null)}
           mb="md"
         />
         <Group justify="flex-end">
@@ -327,6 +683,33 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           onCancel={closeMaintModal}
         />
       </Modal>
+
+      <MaintenanceDetailsModal
+        opened={detailsModalOpened}
+        onClose={closeDetailsModal}
+        record={selectedRecord}
+        savingIgnore={savingIgnore}
+        onIgnore={handleIgnore}
+        markAsDone={markAsDone}
+        setMarkAsDone={setMarkAsDone}
+        doneDate={doneDate}
+        setDoneDate={setDoneDate}
+        doneKm={doneKm}
+        setDoneKm={setDoneKm}
+        doneCost={doneCost}
+        setDoneCost={setDoneCost}
+        doneObs={doneObs}
+        setDoneObs={setDoneObs}
+        doneFiles={doneFiles}
+        setDoneFiles={setDoneFiles}
+        suggestedNextKm={suggestedNextKm}
+        setSuggestedNextKm={setSuggestedNextKm}
+        suggestedNextDate={suggestedNextDate}
+        setSuggestedNextDate={setSuggestedNextDate}
+        savingDone={savingDone}
+        onSaveDone={handleSaveDone}
+      />
     </Container>
   );
 }
+
