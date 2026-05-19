@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "zenstack generate && prisma generate"
   },
   "dependencies": {
     "@mantine/charts": "^9.2.0",
