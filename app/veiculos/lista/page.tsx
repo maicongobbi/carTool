@@ -1,3 +1,5 @@
+"use client";
+
 import { Button, Container, Group, Text, Title } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
