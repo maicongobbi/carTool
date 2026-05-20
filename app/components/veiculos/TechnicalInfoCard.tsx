@@ -1,5 +1,5 @@
-import { Card, Group, Text, Badge, Alert } from "@mantine/core";
-import { IconSettings, IconInfoCircle } from "@tabler/icons-react";
+import { Badge, Card, Group, Text } from "@mantine/core";
+import { IconBulb, IconSettings } from "@tabler/icons-react";
 
 export interface TechnicalInfoCardProps {
   description: string;
@@ -34,23 +34,32 @@ export function TechnicalInfoCard({
           {kmInterval && timeIntervalMonths
             ? `${kmInterval.toLocaleString("pt-BR")} km ou ${timeIntervalMonths} meses`
             : kmInterval
-            ? `${kmInterval.toLocaleString("pt-BR")} km`
-            : timeIntervalMonths
-            ? `${timeIntervalMonths} meses`
-            : "Sob demanda"}
+              ? `${kmInterval.toLocaleString("pt-BR")} km`
+              : timeIntervalMonths
+                ? `${timeIntervalMonths} meses`
+                : "Sob demanda"}
         </Text>
       </Group>
 
       {notes && (
-        <Alert
+        <Group
+          gap="xs"
           mt="sm"
-          color="blue"
-          variant="light"
-          icon={<IconInfoCircle size={16} />}
-          styles={{ message: { fontSize: "var(--mantine-font-size-xs)" } }}
+          align="flex-start"
+          style={{
+            borderLeft: "3px solid var(--mantine-color-blue-4)",
+            paddingLeft: "var(--mantine-spacing-xs)",
+          }}
         >
-          {notes}
-        </Alert>
+          <IconBulb
+            size={13}
+            color="var(--mantine-color-blue-5)"
+            style={{ marginTop: 1, flexShrink: 0 }}
+          />
+          <Text size="xs" c="blue.6" fs="italic" style={{ flex: 1 }}>
+            {notes}
+          </Text>
+        </Group>
       )}
     </Card>
   );

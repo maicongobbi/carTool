@@ -1,26 +1,38 @@
-import { useCreateTechnicalInfo } from "@/app/lib/hooks";
+import { useCreateTechnicalInfo, useUpdateTechnicalInfo } from "@/app/lib/hooks";
 import { Button, Group, NumberInput, Stack, TextInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { CategorySelect } from "./CategorySelect";
 import { useState } from "react";
 
+interface TechnicalInfoData {
+  id: string;
+  description: string;
+  notes?: string | null;
+  categoryId: string;
+  kmInterval?: number | null;
+  timeIntervalMonths?: number | null;
+}
+
 interface TechnicalInfoFormProps {
   vehicleId: string;
+  initialData?: TechnicalInfoData;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalInfoFormProps) {
+export function TechnicalInfoForm({ vehicleId, initialData, onSuccess, onCancel }: TechnicalInfoFormProps) {
   const createInfo = useCreateTechnicalInfo();
+  const updateInfo = useUpdateTechnicalInfo();
   const [loading, setLoading] = useState(false);
+  const isEditing = !!initialData;
 
   const form = useForm({
     initialValues: {
-      description: "",
-      notes: "",
-      categoryId: null as string | null,
-      kmInterval: undefined as number | undefined,
-      timeIntervalMonths: undefined as number | undefined,
+      description: initialData?.description ?? "",
+      notes: initialData?.notes ?? "",
+      categoryId: initialData?.categoryId ?? null as string | null,
+      kmInterval: initialData?.kmInterval ?? undefined as number | undefined,
+      timeIntervalMonths: initialData?.timeIntervalMonths ?? undefined as number | undefined,
     },
     validate: {
       description: (v) => (!v.trim() ? "Descrição obrigatória" : null),
@@ -31,16 +43,29 @@ export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalI
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      await createInfo.mutateAsync({
-        data: {
-          description: values.description,
-          notes: values.notes || null,
-          categoryId: values.categoryId!,
-          vehicleId: vehicleId,
-          kmInterval: values.kmInterval || null,
-          timeIntervalMonths: values.timeIntervalMonths || null,
-        },
-      });
+      if (isEditing) {
+        await updateInfo.mutateAsync({
+          where: { id: initialData.id },
+          data: {
+            description: values.description,
+            notes: values.notes || null,
+            categoryId: values.categoryId!,
+            kmInterval: values.kmInterval || null,
+            timeIntervalMonths: values.timeIntervalMonths || null,
+          },
+        });
+      } else {
+        await createInfo.mutateAsync({
+          data: {
+            description: values.description,
+            notes: values.notes || null,
+            categoryId: values.categoryId!,
+            vehicleId: vehicleId,
+            kmInterval: values.kmInterval || null,
+            timeIntervalMonths: values.timeIntervalMonths || null,
+          },
+        });
+      }
       onSuccess();
     } catch (e) {
       console.error(e);
@@ -97,7 +122,7 @@ export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalI
             Cancelar
           </Button>
           <Button type="submit" loading={loading}>
-            Salvar
+            {isEditing ? "Atualizar" : "Salvar"}
           </Button>
         </Group>
       </Stack>

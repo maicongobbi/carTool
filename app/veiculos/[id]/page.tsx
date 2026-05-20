@@ -65,6 +65,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
 
   const [sellModalOpened, { open: openSellModal, close: closeSellModal }] = useDisclosure(false);
   const [techModalOpened, { open: openTechModal, close: closeTechModal }] = useDisclosure(false);
+  const [editTechModalOpened, { open: openEditTechModal, close: closeEditTechModal }] = useDisclosure(false);
+  const [selectedTechInfo, setSelectedTechInfo] = useState<any>(null);
   const [maintModalOpened, { open: openMaintModal, close: closeMaintModal }] = useDisclosure(false);
   const [detailsModalOpened, { open: openDetailsModal, close: closeDetailsModal }] = useDisclosure(false);
 
@@ -513,14 +515,22 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             <Text c="dimmed" size="sm">Nenhuma referência técnica cadastrada.</Text>
           ) : (
             (vehicle as any).technicalInfos.map((info: any) => (
-              <TechnicalInfoCard
+              <div
                 key={info.id}
-                description={info.description}
-                notes={info.notes}
-                categoryName={info.category.name}
-                kmInterval={info.kmInterval}
-                timeIntervalMonths={info.timeIntervalMonths}
-              />
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setSelectedTechInfo(info);
+                  openEditTechModal();
+                }}
+              >
+                <TechnicalInfoCard
+                  description={info.description}
+                  notes={info.notes}
+                  categoryName={info.category.name}
+                  kmInterval={info.kmInterval}
+                  timeIntervalMonths={info.timeIntervalMonths}
+                />
+              </div>
             ))
           )}
         </SimpleGrid>
@@ -669,6 +679,17 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           onSuccess={() => { closeTechModal(); refetch(); }}
           onCancel={closeTechModal}
         />
+      </Modal>
+
+      <Modal opened={editTechModalOpened} onClose={closeEditTechModal} title="Editar Referência Técnica">
+        {selectedTechInfo && (
+          <TechnicalInfoForm
+            vehicleId={vehicle.id}
+            initialData={selectedTechInfo}
+            onSuccess={() => { closeEditTechModal(); setSelectedTechInfo(null); refetch(); }}
+            onCancel={() => { closeEditTechModal(); setSelectedTechInfo(null); }}
+          />
+        )}
       </Modal>
 
       <Modal

@@ -12,9 +12,8 @@ import {
   TextInput,
   Textarea,
   FileInput,
-  Alert,
 } from "@mantine/core";
-import { IconUpload, IconInfoCircle } from "@tabler/icons-react";
+import { IconUpload, IconBulb } from "@tabler/icons-react";
 import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
@@ -201,20 +200,6 @@ export function MaintenanceRecordForm({
           />
         )}
 
-        {useReference && form.values.technicalInfoId && (() => {
-          const found = technicalInfos?.find((t) => t.id === form.values.technicalInfoId);
-          return found?.notes ? (
-            <Alert
-              color="blue"
-              variant="light"
-              icon={<IconInfoCircle size={16} />}
-              title="Recomendações Técnicas"
-              styles={{ message: { fontSize: "var(--mantine-font-size-xs)" } }}
-            >
-              {found.notes}
-            </Alert>
-          ) : null;
-        })()}
 
         <TextInput
           label="Descrição do Serviço"
@@ -223,6 +208,30 @@ export function MaintenanceRecordForm({
           disabled={useReference && !!form.values.technicalInfoId}
           {...form.getInputProps("description")}
         />
+
+        {/* Nota sugerida: aparece logo abaixo da descrição */}
+        {useReference && form.values.technicalInfoId && (() => {
+          const found = technicalInfos?.find((t) => t.id === form.values.technicalInfoId);
+          return found?.notes ? (
+            <Group
+              gap="xs"
+              align="flex-start"
+              style={{
+                borderLeft: "3px solid var(--mantine-color-blue-4)",
+                paddingLeft: "var(--mantine-spacing-xs)",
+              }}
+            >
+              <IconBulb
+                size={13}
+                color="var(--mantine-color-blue-5)"
+                style={{ marginTop: 1, flexShrink: 0 }}
+              />
+              <Text size="xs" c="blue.6" fs="italic" style={{ flex: 1 }}>
+                {found.notes}
+              </Text>
+            </Group>
+          ) : null;
+        })()}
 
         <CategorySelect
           value={form.values.categoryId}

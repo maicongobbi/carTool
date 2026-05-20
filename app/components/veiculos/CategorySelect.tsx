@@ -1,15 +1,16 @@
 import { useSession } from "@/app/lib/auth-client";
 import { useCreateMaintenanceCategory, useFindManyMaintenanceCategory } from "@/app/lib/hooks";
 import { Combobox, InputBase, Loader, useCombobox } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CategorySelectProps {
   value: string | null;
   onChange: (value: string | null) => void;
   error?: string;
+  disabled?: boolean;
 }
 
-export function CategorySelect({ value, onChange, error }: CategorySelectProps) {
+export function CategorySelect({ value, onChange, error, disabled }: CategorySelectProps) {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
@@ -22,6 +23,17 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
 
   const optionsData = categories?.map((c) => ({ value: c.id, label: c.name })) || [];
   
+  // Sincroniza o campo de texto quando o valor externo muda (ex: importar do plano)
+  useEffect(() => {
+    if (value) {
+      const selected = optionsData.find((item) => item.value === value);
+      if (selected) setSearch(selected.label);
+    } else {
+      setSearch("");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, categories]);
+
   const exactOptionMatch = optionsData.some((item) => item.label === search);
   
   const filteredOptions = optionsData.filter((item) =>
@@ -88,8 +100,8 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
               onChange(null); // Clear selection if typing
             }
           }}
-          onClick={() => combobox.openDropdown()}
-          onFocus={() => combobox.openDropdown()}
+          onClick={() => !disabled && combobox.openDropdown()}
+          onFocus={() => !disabled && combobox.openDropdown()}
           onBlur={() => {
             combobox.closeDropdown();
             if (!value) {
@@ -101,7 +113,7 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
           error={error}
           withAsterisk
           rightSection={creating ? <Loader size={18} /> : null}
-          disabled={creating}
+          disabled={disabled || creating}
         />
       </Combobox.Target>
 
