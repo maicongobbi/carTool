@@ -1,5 +1,5 @@
 import { useCreateTechnicalInfo } from "@/app/lib/hooks";
-import { Button, Group, NumberInput, Stack, TextInput } from "@mantine/core";
+import { Button, Group, NumberInput, Stack, TextInput, Textarea } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { CategorySelect } from "./CategorySelect";
 import { useState } from "react";
@@ -17,6 +17,7 @@ export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalI
   const form = useForm({
     initialValues: {
       description: "",
+      notes: "",
       categoryId: null as string | null,
       kmInterval: undefined as number | undefined,
       timeIntervalMonths: undefined as number | undefined,
@@ -33,6 +34,7 @@ export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalI
       await createInfo.mutateAsync({
         data: {
           description: values.description,
+          notes: values.notes || null,
           categoryId: values.categoryId!,
           vehicleId: vehicleId,
           kmInterval: values.kmInterval || null,
@@ -52,9 +54,17 @@ export function TechnicalInfoForm({ vehicleId, onSuccess, onCancel }: TechnicalI
       <Stack>
         <TextInput
           label="Descrição"
-          placeholder="Ex: Óleo 5w40 Sintético"
+          placeholder="Ex: Troca de óleo e filtro"
           withAsterisk
           {...form.getInputProps("description")}
+        />
+
+        <Textarea
+          label="Recomendações Técnicas"
+          placeholder="Ex: Usar óleo 5w40 sintético, substituir o filtro junto"
+          minRows={2}
+          autosize
+          {...form.getInputProps("notes")}
         />
 
         <CategorySelect

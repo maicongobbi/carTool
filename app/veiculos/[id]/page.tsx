@@ -516,6 +516,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
               <TechnicalInfoCard
                 key={info.id}
                 description={info.description}
+                notes={info.notes}
                 categoryName={info.category.name}
                 kmInterval={info.kmInterval}
                 timeIntervalMonths={info.timeIntervalMonths}

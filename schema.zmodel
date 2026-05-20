@@ -127,6 +127,7 @@ model MaintenanceCategory {
 model TechnicalInfo {
   id                 String   @id @default(cuid())
   description        String
+  notes              String?   // Recomendações técnicas, ex: "usar óleo 5w40 sintético"
   kmInterval         Int?
   timeIntervalMonths Int?
   
@@ -162,7 +163,7 @@ model MaintenanceRecord {
 
   // Categoria (obrigatória)
   categoryId      String
-  category        MaintenanceCategory @relation(fields: [categoryId], references: [id])
+  category        MaintenanceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   vehicleId       String
   vehicle         Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)

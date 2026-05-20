@@ -327,7 +327,7 @@ export function useSuspenseCountTechnicalInfo<TArgs extends Prisma.TechnicalInfo
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('TechnicalInfo', `${endpoint}/technicalInfo/count`, args, options, fetch);
 }
 
-export function useCheckTechnicalInfo<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; description?: string; kmInterval?: number; timeIntervalMonths?: number; categoryId?: string; vehicleId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckTechnicalInfo<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; description?: string; notes?: string; kmInterval?: number; timeIntervalMonths?: number; categoryId?: string; vehicleId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('TechnicalInfo', `${endpoint}/technicalInfo/check`, args, options, fetch);
 }

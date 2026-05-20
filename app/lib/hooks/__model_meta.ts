@@ -375,6 +375,10 @@ const metadata: ModelMeta = {
                 }, description: {
                     name: "description",
                     type: "String",
+                }, notes: {
+                    name: "notes",
+                    type: "String",
+                    isOptional: true,
                 }, kmInterval: {
                     name: "kmInterval",
                     type: "Int",
@@ -497,6 +501,7 @@ const metadata: ModelMeta = {
                     isDataModel: true,
                     backLink: 'maintenanceRecords',
                     isRelationOwner: true,
+                    onDeleteAction: 'Restrict',
                     foreignKeyMapping: { "id": "categoryId" },
                 }, vehicleId: {
                     name: "vehicleId",

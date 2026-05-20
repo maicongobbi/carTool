@@ -12,8 +12,9 @@ import {
   TextInput,
   Textarea,
   FileInput,
+  Alert,
 } from "@mantine/core";
-import { IconUpload } from "@tabler/icons-react";
+import { IconUpload, IconInfoCircle } from "@tabler/icons-react";
 import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
@@ -199,6 +200,21 @@ export function MaintenanceRecordForm({
             clearable
           />
         )}
+
+        {useReference && form.values.technicalInfoId && (() => {
+          const found = technicalInfos?.find((t) => t.id === form.values.technicalInfoId);
+          return found?.notes ? (
+            <Alert
+              color="blue"
+              variant="light"
+              icon={<IconInfoCircle size={16} />}
+              title="Recomendações Técnicas"
+              styles={{ message: { fontSize: "var(--mantine-font-size-xs)" } }}
+            >
+              {found.notes}
+            </Alert>
+          ) : null;
+        })()}
 
         <TextInput
           label="Descrição do Serviço"

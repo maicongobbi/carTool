@@ -1,8 +1,9 @@
-import { Card, Group, Text, Badge } from "@mantine/core";
-import { IconSettings } from "@tabler/icons-react";
+import { Card, Group, Text, Badge, Alert } from "@mantine/core";
+import { IconSettings, IconInfoCircle } from "@tabler/icons-react";
 
 export interface TechnicalInfoCardProps {
   description: string;
+  notes?: string | null;
   kmInterval?: number | null;
   timeIntervalMonths?: number | null;
   categoryName: string;
@@ -10,6 +11,7 @@ export interface TechnicalInfoCardProps {
 
 export function TechnicalInfoCard({
   description,
+  notes,
   kmInterval,
   timeIntervalMonths,
   categoryName,
@@ -38,6 +40,18 @@ export function TechnicalInfoCard({
             : "Sob demanda"}
         </Text>
       </Group>
+
+      {notes && (
+        <Alert
+          mt="sm"
+          color="blue"
+          variant="light"
+          icon={<IconInfoCircle size={16} />}
+          styles={{ message: { fontSize: "var(--mantine-font-size-xs)" } }}
+        >
+          {notes}
+        </Alert>
+      )}
     </Card>
   );
 }
