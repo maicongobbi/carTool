@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, Group, Menu, Text, UnstyledButton } from "@mantine/core";
+import { Avatar, Box, Group, Menu, Text, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconLogout, IconUser } from "@tabler/icons-react";
 
 interface UserButtonProps {
@@ -8,6 +8,11 @@ interface UserButtonProps {
   email: string;
   avatarUrl?: string;
   onLogout?: () => void;
+}
+
+/** Returns only the first name to abbreviate long names on mobile */
+function getFirstName(fullName: string): string {
+  return fullName?.split(" ")[0] ?? fullName;
 }
 
 export function UserButton({ name, email, avatarUrl, onLogout }: UserButtonProps) {
@@ -20,19 +25,26 @@ export function UserButton({ name, email, avatarUrl, onLogout }: UserButtonProps
             padding: "var(--mantine-spacing-xs)",
           }}
         >
-          <Group gap="xs" wrap="nowrap">
+          <Group gap="xs" wrap="nowrap" align="center">
             <Avatar src={avatarUrl} radius="xl" size="sm" color="blue">
               {name?.charAt(0).toUpperCase()}
             </Avatar>
-            <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Nome: visível em mobile e desktop */}
+            <div style={{ minWidth: 0 }}>
               <Text size="sm" fw={500} truncate>
-                {name}
+                {getFirstName(name)}
               </Text>
-              <Text size="xs" c="dimmed" truncate>
+              {/* Email: só em telas >= sm */}
+              <Text size="xs" c="dimmed" truncate visibleFrom="sm">
                 {email}
               </Text>
             </div>
-            <IconChevronDown size={14} />
+
+            {/* Chevron: só em telas >= sm */}
+            <Box visibleFrom="sm">
+              <IconChevronDown size={14} />
+            </Box>
           </Group>
         </UnstyledButton>
       </Menu.Target>

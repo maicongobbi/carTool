@@ -44,13 +44,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
+        <Group h="100%" px="md" justify="space-between" wrap="nowrap" style={{ overflow: "hidden" }}>
+          <Group wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={4}>🚗 carTool</Title>
+            <Title order={4} style={{ whiteSpace: "nowrap" }}>🚗 carTool</Title>
           </Group>
           {isPending ? (
-            <Skeleton height={36} width={160} radius="sm" />
+            <Skeleton height={36} width={36} radius="xl" hiddenFrom="sm" />
           ) : session ? (
             <UserButton
               name={session.user.name}
