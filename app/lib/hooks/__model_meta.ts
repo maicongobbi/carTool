@@ -271,6 +271,7 @@ const metadata: ModelMeta = {
                     name: "notes",
                     type: "String",
                     isArray: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": [] }] }],
                 }, userId: {
                     name: "userId",
                     type: "String",

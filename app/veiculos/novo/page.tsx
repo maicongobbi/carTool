@@ -62,6 +62,7 @@ export default function NovoVeiculoPage() {
           purchasePrice: values.purchasePrice,
           purchaseDate: values.purchaseDate ? new Date(values.purchaseDate).toISOString() : undefined,
           fipeCode: values.fipeCode || undefined,
+          notes: [],
           userId: session!.user.id,
         },
       });
