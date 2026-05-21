@@ -17,6 +17,7 @@ import {
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { IconExternalLink, IconFile, IconUpload } from "@tabler/icons-react";
+import { formatLocalDate } from "@/app/lib/date-utils";
 
 interface MaintenanceDetailsModalProps {
   opened: boolean;
@@ -89,7 +90,7 @@ export function MaintenanceDetailsModal({
         <Group grow>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">Data do Serviço</Text>
-            <Text fw={500}>{new Date(record.date).toLocaleDateString("pt-BR")}</Text>
+            <Text fw={500}>{formatLocalDate(record.date)}</Text>
           </Stack>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">KM no Ato</Text>

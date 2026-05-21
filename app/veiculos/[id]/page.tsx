@@ -1,6 +1,7 @@
 "use client";
 
 import { useCreateMaintenanceRecord, useFindUniqueVehicle, useUpdateMaintenanceRecord, useUpdateVehicle } from "@/app/lib/hooks";
+import { formatLocalDate } from "@/app/lib/date-utils";
 import { supabase } from "@/app/lib/supabase-client";
 import {
   ActionIcon,
@@ -164,8 +165,18 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
     if (!selectedRecord || !doneDate || !doneKm) return;
     setSavingDone(true);
     try {
+      // Ajusta doneDate para o meio do dia local para evitar problemas de fuso horário na serialização
+      const recordDate = new Date(doneDate);
+      recordDate.setHours(12, 0, 0, 0);
+
       let nextKm: number | undefined = suggestedNextKm ? Number(suggestedNextKm) : undefined;
-      let nextDate: string | undefined = suggestedNextDate ? suggestedNextDate.toISOString() : undefined;
+      let nextDate: string | undefined = undefined;
+
+      if (suggestedNextDate) {
+        const snd = new Date(suggestedNextDate);
+        snd.setHours(12, 0, 0, 0);
+        nextDate = snd.toISOString();
+      }
 
       // Fall back to computing from technicalInfo if user didn't fill the suggestions
       if (!nextKm && !nextDate && selectedRecord.technicalInfoId) {
@@ -175,7 +186,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             nextKm = Number(doneKm) + found.kmInterval;
           }
           if (found.timeIntervalMonths) {
-            const nd = new Date(doneDate);
+            const nd = new Date(recordDate);
             nd.setMonth(nd.getMonth() + found.timeIntervalMonths);
             nextDate = nd.toISOString();
           }
@@ -208,7 +219,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
 
       await createRecord.mutateAsync({
         data: {
-          date: doneDate.toISOString(),
+          date: recordDate.toISOString(),
           kmAtService: Number(doneKm),
           description: selectedRecord.description,
           cost: doneCost ? Number(doneCost) : undefined,
@@ -236,9 +247,19 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
     if (!saleDate) return;
     setSavingSale(true);
     try {
+      let d: Date;
+      const saleVal = saleDate as any;
+      if (typeof saleVal === 'string' && saleVal.includes('-')) {
+        const [year, month, day] = saleVal.split('-').map(Number);
+        d = new Date(year, month - 1, day, 12, 0, 0);
+      } else {
+        d = new Date(saleDate);
+        d.setHours(12, 0, 0, 0);
+      }
+
       await updateVehicle.mutateAsync({
         where: { id },
-        data: { saleDate: saleDate.toISOString() },
+        data: { saleDate: d.toISOString() },
       });
       closeSellModal();
       refetch();
@@ -420,7 +441,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
                     <Badge color="red" variant="white" size="xs">KM: {r.nextKm.toLocaleString("pt-BR")}</Badge>
                   )}
                   {r.nextDate && new Date(r.nextDate) <= now && (
-                    <Badge color="red" variant="white" size="xs">Data: {new Date(r.nextDate).toLocaleDateString("pt-BR")}</Badge>
+                    <Badge color="red" variant="white" size="xs">Data: {formatLocalDate(r.nextDate)}</Badge>
                   )}
                 </Group>
               </Group>
@@ -440,7 +461,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
                     {r._alertStatus === "critical" ? "Crítico" : r._alertStatus === "warning" ? "Atenção" : "Próxima"}
                   </Badge>
                   {r.nextKm && <Badge color="indigo" variant="light" size="xs">KM: {r.nextKm.toLocaleString("pt-BR")}</Badge>}
-                  {r.nextDate && <Badge color="violet" variant="light" size="xs">Data: {new Date(r.nextDate).toLocaleDateString("pt-BR")}</Badge>}
+                  {r.nextDate && <Badge color="violet" variant="light" size="xs">Data: {formatLocalDate(r.nextDate)}</Badge>}
                 </Group>
               </Group>
             ))}
@@ -464,7 +485,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           <Group>
             {vehicle.saleDate ? (
               <Badge color="red" size="lg" leftSection={<IconCheck size={14} />}>
-                Vendido em {new Date(vehicle.saleDate).toLocaleDateString("pt-BR")}
+                Vendido em {formatLocalDate(vehicle.saleDate)}
               </Badge>
             ) : (
               <Button variant="light" color="red" leftSection={<IconTag size={16} />} onClick={openSellModal}>

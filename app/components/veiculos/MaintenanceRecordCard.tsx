@@ -1,5 +1,6 @@
 import { Badge, Card, Divider, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { IconCalendar, IconClock, IconCoin, IconGauge, IconMessageCircle } from "@tabler/icons-react";
+import { formatLocalDate } from "@/app/lib/date-utils";
 
 export type AlertStatus = "overdue" | "critical" | "warning" | "notice" | null;
 export type AlertReason = "km" | "data" | null;
@@ -99,7 +100,7 @@ export function MaintenanceRecordCard({
       <Group gap="lg" c="dimmed" mb="xs">
         <Group gap={4}>
           <IconCalendar size={13} />
-          <Text size="xs">{new Date(date).toLocaleDateString("pt-BR")}</Text>
+          <Text size="xs">{formatLocalDate(date)}</Text>
         </Group>
         <Group gap={4}>
           <IconGauge size={13} />
@@ -138,7 +139,7 @@ export function MaintenanceRecordCard({
                 <Group gap={4}>
                   <IconClock size={13} color={borderColor ?? "var(--mantine-color-blue-6)"} />
                   <Text size="sm" fw={700} c={borderColor ? undefined : "blue"}>
-                    {new Date(nextDate).toLocaleDateString("pt-BR")}
+                    {formatLocalDate(nextDate)}
                   </Text>
                 </Group>
               )}

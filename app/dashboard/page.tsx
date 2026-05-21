@@ -1,11 +1,13 @@
 "use client";
 
 import { useFindManyMaintenanceRecord, useFindManyVehicle } from "@/app/lib/hooks";
+import { formatMonthYear } from "@/app/lib/date-utils";
 import { BarChart, DonutChart, LineChart } from "@mantine/charts";
 import {
   Badge,
   Button,
   Card,
+  Checkbox,
   Container,
   Group,
   Select,
@@ -49,6 +51,7 @@ function KpiCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [includeSold, setIncludeSold] = useState(false);
 
   const { data: vehicles, isLoading: loadingVehicles } = useFindManyVehicle({
     orderBy: { createdAt: "desc" },
@@ -64,41 +67,68 @@ export default function DashboardPage() {
   // Opções do Select
   const vehicleOptions = useMemo(() => {
     if (!vehicles) return [];
-    return vehicles.map((v) => ({
-      value: v.id,
-      label: `${v.brand} ${v.model} (${v.year})`,
-    }));
-  }, [vehicles]);
+    return vehicles
+      .filter((v) => includeSold || !v.saleDate)
+      .map((v) => ({
+        value: v.id,
+        label: `${v.brand} ${v.model} (${v.year})${v.saleDate ? " (Vendido)" : ""}`,
+      }));
+  }, [vehicles, includeSold]);
+
+  // Handler para checkbox de incluir vendidos (reseta o select caso o veículo selecionado seja vendido e a checkbox desmarcada)
+  const handleIncludeSoldChange = (checked: boolean) => {
+    setIncludeSold(checked);
+    if (!checked && selectedVehicleId && vehicles) {
+      const selected = vehicles.find((v) => v.id === selectedVehicleId);
+      if (selected?.saleDate) {
+        setSelectedVehicleId(null);
+      }
+    }
+  };
+
+  const filteredVehicles = useMemo(() => {
+    if (!vehicles) return [];
+    if (selectedVehicleId) {
+      return vehicles.filter((v) => v.id === selectedVehicleId);
+    }
+    return vehicles.filter((v) => includeSold || !v.saleDate);
+  }, [vehicles, selectedVehicleId, includeSold]);
 
   // Registros e veículos filtrados
   const filteredRecords = useMemo(() => {
     if (!records) return [];
-    if (!selectedVehicleId) return records;
-    return records.filter((r) => (r as any).vehicleId === selectedVehicleId);
-  }, [records, selectedVehicleId]);
-
-  const filteredVehicles = useMemo(() => {
-    if (!vehicles) return [];
-    if (!selectedVehicleId) return vehicles;
-    return vehicles.filter((v) => v.id === selectedVehicleId);
-  }, [vehicles, selectedVehicleId]);
+    const allowedVehicleIds = new Set(filteredVehicles.map((v) => v.id));
+    return records.filter((r) => allowedVehicleIds.has((r as any).vehicleId));
+  }, [records, filteredVehicles]);
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
     if (!filteredVehicles.length && !filteredRecords.length) return null;
     const activeVehicles = filteredVehicles.filter((v) => !v.saleDate);
     const totalCost = filteredRecords.reduce((s, r) => s + (r.cost ?? 0), 0);
-    const totalKm = activeVehicles.reduce((s, v) => s + (v.currentKm - v.initialKm), 0);
+    const totalKm = filteredVehicles.reduce((s, v) => s + (v.currentKm - v.initialKm), 0);
     const custoPorKm = totalKm > 0 ? totalCost / totalKm : 0;
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentCount = filteredRecords.filter((r) => new Date(r.date) >= thirtyDaysAgo).length;
+
+    // Manutenções vencidas: apenas o registro mais recente por (veículo + categoria),
+    // igual à lógica da página de veículo — evita contar histórico antigo já atendido.
     const now = new Date();
-    const overdueCount = filteredRecords.filter(
-      (r) => !r.ignored &&
-        ((r.nextKm && r.nextKm <= (r.vehicle as any)?.currentKm) ||
-          (r.nextDate && new Date(r.nextDate) <= now))
-    ).length;
+    const seen = new Set<string>();
+    let overdueCount = 0;
+    // filteredRecords já vem ordenado por date asc; precisamos do mais recente → iterar ao contrário
+    [...filteredRecords].reverse().forEach((r: any) => {
+      const key = `${r.vehicleId}:${r.categoryId}`;
+      if (seen.has(key) || r.ignored) return;
+      seen.add(key);
+      const vehicleCurrentKm = r.vehicle?.currentKm ?? 0;
+      const kmOverdue = r.nextKm && r.nextKm <= vehicleCurrentKm;
+      const dateOverdue = r.nextDate && new Date(r.nextDate) <= now;
+      if (kmOverdue || dateOverdue) overdueCount++;
+    });
+
     return { activeVehicles, totalCost, totalKm, custoPorKm, recentCount, overdueCount };
   }, [filteredVehicles, filteredRecords]);
 
@@ -108,11 +138,11 @@ export default function DashboardPage() {
     const months: Record<string, number> = {};
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months[d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })] = 0;
+      months[formatMonthYear(d)] = 0;
     }
     filteredRecords.forEach((r) => {
       if (!r.cost) return;
-      const key = new Date(r.date).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+      const key = formatMonthYear(r.date);
       if (key in months) months[key] += r.cost;
     });
     return Object.entries(months).map(([month, custo]) => ({ month, custo }));
@@ -156,7 +186,7 @@ export default function DashboardPage() {
       .map((r) => {
         acc += r.cost ?? 0;
         return {
-          data: new Date(r.date).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
+          data: formatMonthYear(r.date),
           total: parseFloat(acc.toFixed(2)),
         };
       });
@@ -184,7 +214,13 @@ export default function DashboardPage() {
           <Title order={2}>Dashboard</Title>
           <Text c="dimmed" size="sm">Visão geral da sua frota</Text>
         </div>
-        <Group gap="sm" align="flex-end">
+        <Group gap="md" align="center" wrap="wrap">
+          <Checkbox
+            label="Incluir vendidos"
+            checked={includeSold}
+            onChange={(event) => handleIncludeSoldChange(event.currentTarget.checked)}
+            size="sm"
+          />
           <Select
             placeholder="Todos os veículos"
             data={vehicleOptions}
