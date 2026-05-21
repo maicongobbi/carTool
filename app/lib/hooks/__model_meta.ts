@@ -272,6 +272,18 @@ const metadata: ModelMeta = {
                     type: "String",
                     isArray: true,
                     attributes: [{ "name": "@default", "args": [{ "name": "value", "value": [] }] }],
+                }, frontTirePressure: {
+                    name: "frontTirePressure",
+                    type: "Int",
+                    isOptional: true,
+                }, rearTirePressure: {
+                    name: "rearTirePressure",
+                    type: "Int",
+                    isOptional: true,
+                }, fuelTankCapacity: {
+                    name: "fuelTankCapacity",
+                    type: "Int",
+                    isOptional: true,
                 }, userId: {
                     name: "userId",
                     type: "String",

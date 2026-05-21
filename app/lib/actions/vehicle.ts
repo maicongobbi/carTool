@@ -98,6 +98,9 @@ export async function transferVehicle(vehicleId: string, newUserId: string, sale
       initialKm: oldVehicle.currentKm, // KM inicial é o KM atual no ato da venda
       currentKm: oldVehicle.currentKm,
       fipeCode: oldVehicle.fipeCode,
+      frontTirePressure: oldVehicle.frontTirePressure,
+      rearTirePressure: oldVehicle.rearTirePressure,
+      fuelTankCapacity: oldVehicle.fuelTankCapacity,
       notes: oldVehicle.notes,
       userId: newUserId,
     },

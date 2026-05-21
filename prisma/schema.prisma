@@ -79,6 +79,9 @@ model Vehicle {
   currentKm             Int
   fipeCode              String?
   notes                 String[]              @default([])
+  frontTirePressure     Int?
+  rearTirePressure      Int?
+  fuelTankCapacity      Int?
   userId                String
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   technicalInfos        TechnicalInfo[]

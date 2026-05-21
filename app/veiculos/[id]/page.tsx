@@ -505,6 +505,15 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
               {vehicle.modelYear ? `/${vehicle.modelYear}` : ""} •{" "}
               {vehicle.fipeCode ? `FIPE: ${vehicle.fipeCode}` : "Sem código FIPE"}
             </Text>
+            {((vehicle as any).frontTirePressure || (vehicle as any).rearTirePressure || (vehicle as any).fuelTankCapacity) && (
+              <Text size="xs" c="dimmed" mt={4}>
+                {(vehicle as any).frontTirePressure ? `Calibragem Dianteira: ${(vehicle as any).frontTirePressure} psi` : ""}
+                {(vehicle as any).frontTirePressure && (vehicle as any).rearTirePressure ? " / " : ""}
+                {(vehicle as any).rearTirePressure ? `Traseira: ${(vehicle as any).rearTirePressure} psi` : ""}
+                {((vehicle as any).frontTirePressure || (vehicle as any).rearTirePressure) && (vehicle as any).fuelTankCapacity ? " • " : ""}
+                {(vehicle as any).fuelTankCapacity ? `Tanque: ${(vehicle as any).fuelTankCapacity} litros` : ""}
+              </Text>
+            )}
           </div>
           <Group>
             {vehicle.saleDate ? (

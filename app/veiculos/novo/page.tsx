@@ -38,6 +38,9 @@ export default function NovoVeiculoPage() {
       purchasePrice: undefined as number | undefined,
       purchaseDate: null as Date | null,
       fipeCode: "",
+      frontTirePressure: undefined as number | undefined,
+      rearTirePressure: undefined as number | undefined,
+      fuelTankCapacity: undefined as number | undefined,
     },
     validate: {
       brand: (value) => (value.trim().length === 0 ? "A marca é obrigatória" : null),
@@ -62,6 +65,9 @@ export default function NovoVeiculoPage() {
           purchasePrice: values.purchasePrice,
           purchaseDate: values.purchaseDate ? new Date(values.purchaseDate).toISOString() : undefined,
           fipeCode: values.fipeCode || undefined,
+          frontTirePressure: values.frontTirePressure ?? undefined,
+          rearTirePressure: values.rearTirePressure ?? undefined,
+          fuelTankCapacity: values.fuelTankCapacity ?? undefined,
           notes: [],
           userId: session!.user.id,
         },
@@ -181,6 +187,33 @@ export default function NovoVeiculoPage() {
             fixedDecimalScale
             hideControls
             {...form.getInputProps("purchasePrice")}
+          />
+
+          <NumberInput
+            label="Pressão Dianteira (PSI)"
+            placeholder="Ex: 33"
+            min={0}
+            hideControls
+            suffix=" psi"
+            {...form.getInputProps("frontTirePressure")}
+          />
+
+          <NumberInput
+            label="Pressão Traseira (PSI)"
+            placeholder="Ex: 32"
+            min={0}
+            hideControls
+            suffix=" psi"
+            {...form.getInputProps("rearTirePressure")}
+          />
+
+          <NumberInput
+            label="Capacidade do Tanque (Litros)"
+            placeholder="Ex: 44"
+            min={0}
+            hideControls
+            suffix=" L"
+            {...form.getInputProps("fuelTankCapacity")}
           />
         </SimpleGrid>
 
