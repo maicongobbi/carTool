@@ -752,6 +752,15 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           return <Text c="dimmed" size="sm">Nenhum resultado para "{search}".</Text>;
         }
 
+        const statusOrder: Record<string, number> = {
+          overdue: 0, critical: 1, warning: 2, notice: 3,
+        };
+        const sorted = [...filtered].sort((a, b) => {
+          const sa = a._alertStatus && !a.ignored ? (statusOrder[a._alertStatus] ?? 4) : 4;
+          const sb = b._alertStatus && !b.ignored ? (statusOrder[b._alertStatus] ?? 4) : 4;
+          return sa - sb;
+        });
+
         const renderCard = (record: any) => (
           <MaintenanceRecordCard
             key={record.id}
@@ -765,6 +774,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             alertStatus={record._alertStatus}
             alertReason={record._alertReason}
             ignored={record.ignored}
+            observations={record.observations}
             onClick={() => handleOpenDetails(record)}
           />
         );
@@ -772,14 +782,14 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         if (groupBy === "list") {
           return (
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" mb="xl">
-              {filtered.map(renderCard)}
+              {sorted.map(renderCard)}
             </SimpleGrid>
           );
         }
 
         // Group by category — show only most recent per category (first in desc order)
         const grouped = new Map<string, { categoryName: string; records: any[] }>();
-        filtered.forEach((r: any) => {
+        sorted.forEach((r: any) => {
           if (!grouped.has(r.categoryId)) {
             grouped.set(r.categoryId, { categoryName: r.category.name, records: [] });
           }

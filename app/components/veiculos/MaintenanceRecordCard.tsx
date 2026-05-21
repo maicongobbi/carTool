@@ -1,5 +1,5 @@
-import { Badge, Card, Divider, Group, Stack, Text } from "@mantine/core";
-import { IconCalendar, IconClock, IconCoin, IconGauge } from "@tabler/icons-react";
+import { Badge, Card, Divider, Group, Stack, Text, Tooltip } from "@mantine/core";
+import { IconCalendar, IconClock, IconCoin, IconGauge, IconMessageCircle } from "@tabler/icons-react";
 
 export type AlertStatus = "overdue" | "critical" | "warning" | "notice" | null;
 export type AlertReason = "km" | "data" | null;
@@ -15,6 +15,7 @@ export interface MaintenanceRecordCardProps {
   alertStatus?: AlertStatus;
   alertReason?: AlertReason;
   ignored?: boolean;
+  observations?: string | null;
   onClick?: () => void;
 }
 
@@ -48,6 +49,7 @@ export function MaintenanceRecordCard({
   alertStatus,
   alertReason,
   ignored,
+  observations,
   onClick,
 }: MaintenanceRecordCardProps) {
   const borderColor = !ignored && alertStatus ? STATUS_COLORS[alertStatus] : undefined;
@@ -112,6 +114,18 @@ export function MaintenanceRecordCard({
           </Group>
         )}
       </Group>
+
+      {/* Observações */}
+      {observations && (
+        <Tooltip label={observations} multiline maw={280} withArrow position="bottom" disabled={observations.length <= 80}>
+          <Group gap={4} c="dimmed" mt={2} style={{ cursor: observations.length > 80 ? "help" : "default" }}>
+            <IconMessageCircle size={12} style={{ flexShrink: 0 }} />
+            <Text size="xs" lineClamp={2} style={{ flex: 1 }}>
+              {observations}
+            </Text>
+          </Group>
+        </Tooltip>
+      )}
 
       {/* Próxima manutenção — destaque */}
       {(nextDate || nextKm) && (
