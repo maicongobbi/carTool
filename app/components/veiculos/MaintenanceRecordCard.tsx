@@ -17,6 +17,7 @@ export interface MaintenanceRecordCardProps {
   alertReason?: AlertReason;
   ignored?: boolean;
   observations?: string | null;
+  previousOwner?: boolean;
   onClick?: () => void;
 }
 
@@ -51,6 +52,7 @@ export function MaintenanceRecordCard({
   alertReason,
   ignored,
   observations,
+  previousOwner,
   onClick,
 }: MaintenanceRecordCardProps) {
   const borderColor = !ignored && alertStatus ? STATUS_COLORS[alertStatus] : undefined;
@@ -92,6 +94,9 @@ export function MaintenanceRecordCard({
           )}
           {ignored && (
             <Badge size="xs" color="gray" variant="light">Ignorada</Badge>
+          )}
+          {previousOwner && (
+            <Badge size="xs" color="gray" variant="outline">Proprietário anterior</Badge>
           )}
         </Group>
       </Group>

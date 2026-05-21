@@ -1,10 +1,13 @@
 "use client";
 
-import { useCreateMaintenanceRecord, useFindUniqueVehicle, useUpdateMaintenanceRecord, useUpdateVehicle } from "@/app/lib/hooks";
+import { useCreateMaintenanceRecord, useFindUniqueVehicle, useUpdateMaintenanceRecord, useUpdateVehicle, useFindManyUser } from "@/app/lib/hooks";
 import { formatLocalDate } from "@/app/lib/date-utils";
+import { useSession } from "@/app/lib/auth-client";
+import { transferVehicle } from "@/app/lib/actions/vehicle";
 import { supabase } from "@/app/lib/supabase-client";
 import {
   ActionIcon,
+  Checkbox,
   Alert,
   Badge,
   Button,
@@ -46,7 +49,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import { MaintenanceDetailsModal } from "../../components/veiculos/MaintenanceDetailsModal";
 import { MaintenanceRecordCard } from "../../components/veiculos/MaintenanceRecordCard";
 import { MaintenanceRecordForm } from "../../components/veiculos/MaintenanceRecordForm";
@@ -78,6 +81,15 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
 
   const [saleDate, setSaleDate] = useState<Date | null>(null);
   const [savingSale, setSavingSale] = useState(false);
+  const [shouldTransfer, setShouldTransfer] = useState(false);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const { data: usersData } = useFindManyUser();
+
+  const availableUsers = useMemo(() => {
+    if (!usersData || !session?.user) return [];
+    return usersData.filter(u => u.id !== session.user.id);
+  }, [usersData, session?.user]);
   const [newKm, setNewKm] = useState<number | string>("");
   const [savingKm, setSavingKm] = useState(false);
 
@@ -245,6 +257,10 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
 
   const handleMarkAsSold = async () => {
     if (!saleDate) return;
+    if (shouldTransfer && !targetUserId) {
+      notifications.show({ title: "Aviso", message: "Selecione o usuário de destino.", color: "orange" });
+      return;
+    }
     setSavingSale(true);
     try {
       let d: Date;
@@ -257,14 +273,21 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         d.setHours(12, 0, 0, 0);
       }
 
-      await updateVehicle.mutateAsync({
-        where: { id },
-        data: { saleDate: d.toISOString() },
-      });
+      if (shouldTransfer && targetUserId) {
+        await transferVehicle(id, targetUserId, d);
+        notifications.show({ title: "Veículo Transferido!", message: "Veículo marcado como vendido e transferido para o novo dono.", color: "green" });
+      } else {
+        await updateVehicle.mutateAsync({
+          where: { id },
+          data: { saleDate: d.toISOString() },
+        });
+        notifications.show({ title: "Veículo Vendido!", message: "Veículo marcado como vendido com sucesso.", color: "green" });
+      }
       closeSellModal();
       refetch();
     } catch (e) {
       console.error(e);
+      notifications.show({ title: "Erro", message: "Não foi possível realizar a venda/transferência.", color: "red" });
     } finally {
       setSavingSale(false);
     }
@@ -346,7 +369,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
 
   // KPIs calculados
   const records = (vehicle as any).maintenanceRecords ?? [];
-  const totalGasto: number = records.reduce(
+  const currentOwnerRecords = records.filter((r: any) => !r.previousOwner);
+  const totalGasto: number = currentOwnerRecords.reduce(
     (acc: number, r: any) => acc + (r.cost ?? 0),
     0
   );
@@ -796,6 +820,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             alertReason={record._alertReason}
             ignored={record.ignored}
             observations={record.observations}
+            previousOwner={record.previousOwner}
             onClick={() => handleOpenDetails(record)}
           />
         );
@@ -845,10 +870,37 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
           onChange={(val) => setSaleDate(val as Date | null)}
           mb="md"
         />
-        <Group justify="flex-end">
+
+        <Checkbox
+          label="Transferir posse para outro usuário da plataforma"
+          description="O novo proprietário terá uma cópia do veículo com o histórico de manutenções herdado (com custos e km zerados para ele)."
+          checked={shouldTransfer}
+          onChange={(e) => setShouldTransfer(e.currentTarget.checked)}
+          mb="md"
+        />
+
+        {shouldTransfer && (
+          <Select
+            label="Selecione o Usuário de Destino"
+            placeholder="Escolha um usuário"
+            data={availableUsers.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+            value={targetUserId}
+            onChange={setTargetUserId}
+            searchable
+            clearable
+            mb="md"
+            withAsterisk
+          />
+        )}
+
+        <Group justify="flex-end" mt="lg">
           <Button variant="subtle" onClick={closeSellModal}>Cancelar</Button>
-          <Button onClick={handleMarkAsSold} loading={savingSale} disabled={!saleDate}>
-            Salvar
+          <Button 
+            onClick={handleMarkAsSold} 
+            loading={savingSale} 
+            disabled={!saleDate || (shouldTransfer && !targetUserId)}
+          >
+            Confirmar
           </Button>
         </Group>
       </Modal>

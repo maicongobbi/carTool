@@ -1,7 +1,8 @@
 "use client";
 
 import { useFindManyVehicle } from "@/app/lib/hooks";
-import { Button, Card, Container, Group, Skeleton, Text, Title } from "@mantine/core";
+import { formatLocalDate } from "@/app/lib/date-utils";
+import { Button, Card, Container, Group, Skeleton, Stack, Text, Title } from "@mantine/core";
 import { IconCar, IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
 
@@ -36,16 +37,22 @@ export default function HomePage() {
                 <IconCar size={24} stroke={1.5} />
               </Group>
               
-              <Text size="sm" c="dimmed" mb="lg" h={60}>
-                Ano: {vehicle.year} <br />
-                KM Atual: {vehicle.currentKm.toLocaleString("pt-BR")} km
-              </Text>
+              <Stack gap={2} mb="lg" mih={60} justify="center">
+                <Text size="sm" c="dimmed">Ano: {vehicle.year}</Text>
+                <Text size="sm" c="dimmed">KM Atual: {vehicle.currentKm.toLocaleString("pt-BR")} km</Text>
+                {vehicle.saleDate && (
+                  <Text size="xs" c="red" fw={600} mt={2}>
+                    Vendido em {formatLocalDate(vehicle.saleDate)}
+                  </Text>
+                )}
+              </Stack>
 
               <Button
                 component={Link}
                 href={`/veiculos/${vehicle.id}`}
                 fullWidth
                 variant="light"
+                color={vehicle.saleDate ? "red" : "blue"}
               >
                 Gerenciar veículo
               </Button>

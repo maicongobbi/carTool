@@ -125,6 +125,7 @@ model MaintenanceRecord {
   observations    String?
   attachments     String[]
   ignored         Boolean             @default(false)
+  previousOwner   Boolean             @default(false)
   technicalInfoId String?
   technicalInfo   TechnicalInfo?      @relation(fields: [technicalInfoId], references: [id], onDelete: SetNull)
   categoryId      String

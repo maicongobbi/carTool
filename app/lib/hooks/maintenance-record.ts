@@ -327,7 +327,7 @@ export function useSuspenseCountMaintenanceRecord<TArgs extends Prisma.Maintenan
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('MaintenanceRecord', `${endpoint}/maintenanceRecord/count`, args, options, fetch);
 }
 
-export function useCheckMaintenanceRecord<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; kmAtService?: number; description?: string; nextKm?: number; observations?: string; attachments?: string; ignored?: boolean; technicalInfoId?: string; categoryId?: string; vehicleId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckMaintenanceRecord<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; kmAtService?: number; description?: string; nextKm?: number; observations?: string; attachments?: string; ignored?: boolean; previousOwner?: boolean; technicalInfoId?: string; categoryId?: string; vehicleId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('MaintenanceRecord', `${endpoint}/maintenanceRecord/check`, args, options, fetch);
 }

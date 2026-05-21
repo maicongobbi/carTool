@@ -105,13 +105,13 @@ export default function DashboardPage() {
   const kpis = useMemo(() => {
     if (!filteredVehicles.length && !filteredRecords.length) return null;
     const activeVehicles = filteredVehicles.filter((v) => !v.saleDate);
-    const totalCost = filteredRecords.reduce((s, r) => s + (r.cost ?? 0), 0);
+    const totalCost = filteredRecords.filter((r) => !(r as any).previousOwner).reduce((s, r) => s + (r.cost ?? 0), 0);
     const totalKm = filteredVehicles.reduce((s, v) => s + (v.currentKm - v.initialKm), 0);
     const custoPorKm = totalKm > 0 ? totalCost / totalKm : 0;
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentCount = filteredRecords.filter((r) => new Date(r.date) >= thirtyDaysAgo).length;
+    const recentCount = filteredRecords.filter((r) => !(r as any).previousOwner && new Date(r.date) >= thirtyDaysAgo).length;
 
     // Manutenções vencidas: apenas o registro mais recente por (veículo + categoria),
     // igual à lógica da página de veículo — evita contar histórico antigo já atendido.
@@ -141,7 +141,7 @@ export default function DashboardPage() {
       months[formatMonthYear(d)] = 0;
     }
     filteredRecords.forEach((r) => {
-      if (!r.cost) return;
+      if (!r.cost || (r as any).previousOwner) return;
       const key = formatMonthYear(r.date);
       if (key in months) months[key] += r.cost;
     });
@@ -152,7 +152,7 @@ export default function DashboardPage() {
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {};
     filteredRecords.forEach((r) => {
-      if (!r.cost) return;
+      if (!r.cost || (r as any).previousOwner) return;
       const name = (r as any).category?.name ?? "Sem categoria";
       map[name] = (map[name] ?? 0) + r.cost;
     });
@@ -182,7 +182,7 @@ export default function DashboardPage() {
   const cumulativeData = useMemo(() => {
     let acc = 0;
     return filteredRecords
-      .filter((r) => r.cost)
+      .filter((r) => r.cost && !(r as any).previousOwner)
       .map((r) => {
         acc += r.cost ?? 0;
         return {

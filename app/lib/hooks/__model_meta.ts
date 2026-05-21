@@ -479,6 +479,10 @@ const metadata: ModelMeta = {
                     name: "ignored",
                     type: "Boolean",
                     attributes: [{ "name": "@default", "args": [{ "name": "value", "value": false }] }],
+                }, previousOwner: {
+                    name: "previousOwner",
+                    type: "Boolean",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": false }] }],
                 }, technicalInfoId: {
                     name: "technicalInfoId",
                     type: "String",
