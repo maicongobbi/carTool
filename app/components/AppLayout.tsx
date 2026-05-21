@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 import { useMantineColorScheme } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconCar, IconHome, IconSettings } from "@tabler/icons-react";
+import { IconChartBar, IconHome, IconSettings } from "@tabler/icons-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ThemeToggle } from "./ui/ThemeToggle";
@@ -21,8 +21,8 @@ import { UserButton } from "./ui/UserButton";
 
 const navLinks = [
   { label: "Início", icon: IconHome, href: "/home" },
-  { label: "Veículos", icon: IconCar, href: "/veiculos/lista" },
-  { label: "Configurações", icon: IconSettings, href: "/dashboard" },
+  { label: "Dashboard", icon: IconChartBar, href: "/dashboard" },
+  { label: "Configurações", icon: IconSettings, href: "/settings" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
