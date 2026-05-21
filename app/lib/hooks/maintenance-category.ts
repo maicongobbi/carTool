@@ -327,7 +327,7 @@ export function useSuspenseCountMaintenanceCategory<TArgs extends Prisma.Mainten
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('MaintenanceCategory', `${endpoint}/maintenanceCategory/count`, args, options, fetch);
 }
 
-export function useCheckMaintenanceCategory<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; name?: string; userId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckMaintenanceCategory<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; name?: string; vehicleId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('MaintenanceCategory', `${endpoint}/maintenanceCategory/check`, args, options, fetch);
 }

@@ -54,12 +54,6 @@ const metadata: ModelMeta = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'user',
-                }, maintenanceCategories: {
-                    name: "maintenanceCategories",
-                    type: "MaintenanceCategory",
-                    isDataModel: true,
-                    isArray: true,
-                    backLink: 'user',
                 },
             }, uniqueConstraints: {
                 id: {
@@ -298,6 +292,12 @@ const metadata: ModelMeta = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'vehicle',
+                }, maintenanceCategories: {
+                    name: "maintenanceCategories",
+                    type: "MaintenanceCategory",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'vehicle',
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -324,19 +324,19 @@ const metadata: ModelMeta = {
                 }, name: {
                     name: "name",
                     type: "String",
-                }, userId: {
-                    name: "userId",
+                }, vehicleId: {
+                    name: "vehicleId",
                     type: "String",
                     isForeignKey: true,
-                    relationField: 'user',
-                }, user: {
-                    name: "user",
-                    type: "User",
+                    relationField: 'vehicle',
+                }, vehicle: {
+                    name: "vehicle",
+                    type: "Vehicle",
                     isDataModel: true,
                     backLink: 'maintenanceCategories',
                     isRelationOwner: true,
                     onDeleteAction: 'Cascade',
-                    foreignKeyMapping: { "id": "userId" },
+                    foreignKeyMapping: { "id": "vehicleId" },
                 }, technicalInfos: {
                     name: "technicalInfos",
                     type: "TechnicalInfo",
@@ -535,8 +535,8 @@ const metadata: ModelMeta = {
 
     },
     deleteCascade: {
-        user: ['Session', 'Account', 'Vehicle', 'MaintenanceCategory'],
-        vehicle: ['TechnicalInfo', 'MaintenanceRecord'],
+        user: ['Session', 'Account', 'Vehicle'],
+        vehicle: ['MaintenanceCategory', 'TechnicalInfo', 'MaintenanceRecord'],
         maintenanceCategory: ['TechnicalInfo'],
 
     },

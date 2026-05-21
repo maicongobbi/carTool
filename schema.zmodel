@@ -29,7 +29,6 @@ model User {
     
   // Relacionamento com veículos no ZenStack (multi-tenancy)
   vehicles      Vehicle[]
-  maintenanceCategories MaintenanceCategory[]
 
   // O próprio usuário pode ler ou atualizar o seu perfil
   @@allow('read,update', auth() == this)
@@ -100,8 +99,9 @@ model Vehicle {
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  technicalInfos     TechnicalInfo[]
-  maintenanceRecords MaintenanceRecord[]
+  technicalInfos       TechnicalInfo[]
+  maintenanceRecords   MaintenanceRecord[]
+  maintenanceCategories MaintenanceCategory[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -112,8 +112,9 @@ model Vehicle {
 model MaintenanceCategory {
   id            String   @id @default(cuid())
   name          String
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   
   technicalInfos     TechnicalInfo[]
   maintenanceRecords MaintenanceRecord[]
@@ -121,7 +122,7 @@ model MaintenanceCategory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@allow('all', auth().id == userId)
+  @@allow('all', vehicle.userId == auth().id)
 }
 
 model TechnicalInfo {

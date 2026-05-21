@@ -234,6 +234,7 @@ export function MaintenanceRecordForm({
         })()}
 
         <CategorySelect
+          vehicleId={vehicleId}
           value={form.values.categoryId}
           onChange={(val) => form.setFieldValue("categoryId", val)}
           error={form.errors.categoryId as string}

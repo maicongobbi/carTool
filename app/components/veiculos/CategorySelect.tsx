@@ -1,16 +1,16 @@
-import { useSession } from "@/app/lib/auth-client";
 import { useCreateMaintenanceCategory, useFindManyMaintenanceCategory } from "@/app/lib/hooks";
 import { Combobox, InputBase, Loader, useCombobox } from "@mantine/core";
 import { useEffect, useState } from "react";
 
 interface CategorySelectProps {
+  vehicleId: string;
   value: string | null;
   onChange: (value: string | null) => void;
   error?: string;
   disabled?: boolean;
 }
 
-export function CategorySelect({ value, onChange, error, disabled }: CategorySelectProps) {
+export function CategorySelect({ vehicleId, value, onChange, error, disabled }: CategorySelectProps) {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
@@ -18,7 +18,9 @@ export function CategorySelect({ value, onChange, error, disabled }: CategorySel
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   
-  const { data: categories } = useFindManyMaintenanceCategory();
+  const { data: categories } = useFindManyMaintenanceCategory({
+    where: { vehicleId },
+  });
   const createCategory = useCreateMaintenanceCategory();
 
   const optionsData = categories?.map((c) => ({ value: c.id, label: c.name })) || [];
@@ -48,16 +50,15 @@ export function CategorySelect({ value, onChange, error, disabled }: CategorySel
 
   const selectedOption = optionsData.find((item) => item.value === value);
 
-  const { data: session } = useSession();
   const handleCreate = async () => {
-    if (!search.trim() || !session?.user.id || creating) return;
+    if (!search.trim() || creating) return;
     
     setCreating(true);
     try {
       const newCategory = await createCategory.mutateAsync({
         data: { 
           name: search.trim(),
-          userId: session.user.id
+          vehicleId,
         },
       });
       if (newCategory) {
