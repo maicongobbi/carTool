@@ -11,9 +11,12 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useMantineColorScheme } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconCar, IconHome, IconSettings } from "@tabler/icons-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { ThemeToggle } from "./ui/ThemeToggle";
 import { UserButton } from "./ui/UserButton";
 
 const navLinks = [
@@ -27,6 +30,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const { setColorScheme } = useMantineColorScheme();
+
+  // Aplica o tema salvo do usuário assim que a sessão carregar
+  useEffect(() => {
+    const savedTheme = (session?.user as any)?.theme;
+    if (savedTheme === "light" || savedTheme === "dark") {
+      setColorScheme(savedTheme);
+    }
+  }, [session, setColorScheme]);
 
   const handleLogout = async () => {
     await signOut();
@@ -49,16 +61,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Title order={4} style={{ whiteSpace: "nowrap" }}>🚗 carTool</Title>
           </Group>
-          {isPending ? (
-            <Skeleton height={36} width={36} radius="xl" hiddenFrom="sm" />
-          ) : session ? (
-            <UserButton
-              name={session.user.name}
-              email={session.user.email}
-              avatarUrl={session.user.image ?? undefined}
-              onLogout={handleLogout}
-            />
-          ) : null}
+
+          <Group gap="xs" wrap="nowrap">
+            {isPending ? (
+              <>
+                <Skeleton height={32} width={32} radius="xl" />
+                <Skeleton height={36} width={36} radius="xl" hiddenFrom="sm" />
+              </>
+            ) : (
+              <>
+                <ThemeToggle userId={session?.user.id} />
+                {session && (
+                  <UserButton
+                    name={session.user.name}
+                    email={session.user.email}
+                    avatarUrl={session.user.image ?? undefined}
+                    onLogout={handleLogout}
+                  />
+                )}
+              </>
+            )}
+          </Group>
         </Group>
       </AppShell.Header>
 
