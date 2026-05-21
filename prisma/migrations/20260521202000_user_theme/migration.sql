@@ -1,2 +1,2 @@
 -- Migration: Add theme preference to User
-ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "theme" TEXT NOT NULL DEFAULT 'light';
+ALTER TABLE "User" ADD COLUMN "theme" TEXT NOT NULL DEFAULT 'light';
