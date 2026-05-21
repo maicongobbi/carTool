@@ -1,8 +1,10 @@
 "use client";
 
-import { useFindUniqueVehicle, useUpdateVehicle, useCreateMaintenanceRecord, useUpdateMaintenanceRecord } from "@/app/lib/hooks";
+import { useCreateMaintenanceRecord, useFindUniqueVehicle, useUpdateMaintenanceRecord, useUpdateVehicle } from "@/app/lib/hooks";
+import { supabase } from "@/app/lib/supabase-client";
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Card,
@@ -21,14 +23,13 @@ import {
   TextInput,
   Textarea,
   Title,
-  Alert,
   Tooltip,
 } from "@mantine/core";
-import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
+  IconAlertTriangle,
   IconArrowLeft,
   IconCheck,
   IconChevronDown,
@@ -42,15 +43,14 @@ import {
   IconTag,
   IconTool,
   IconTrash,
-  IconAlertTriangle,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { use, useState } from "react";
+import { MaintenanceDetailsModal } from "../../components/veiculos/MaintenanceDetailsModal";
 import { MaintenanceRecordCard } from "../../components/veiculos/MaintenanceRecordCard";
 import { MaintenanceRecordForm } from "../../components/veiculos/MaintenanceRecordForm";
 import { TechnicalInfoCard } from "../../components/veiculos/TechnicalInfoCard";
 import { TechnicalInfoForm } from "../../components/veiculos/TechnicalInfoForm";
-import { MaintenanceDetailsModal } from "../../components/veiculos/MaintenanceDetailsModal";
 
 export default function VeiculoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -194,8 +194,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             .upload(filePath, file);
 
           if (uploadError) {
-             console.error("Upload error", uploadError);
-             throw new Error("Erro ao fazer upload do anexo");
+            console.error("Upload error", uploadError);
+            throw new Error("Erro ao fazer upload do anexo");
           }
 
           const { data: { publicUrl } } = supabase.storage
@@ -286,14 +286,19 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   };
 
   const handleSaveNotes = async () => {
+    // Auto-inclui nota pendente caso o usuário não tenha clicado em "+"
+    const finalNotes = newNoteText.trim()
+      ? [...notesDraft, newNoteText.trim()]
+      : notesDraft;
     setSavingNotes(true);
     try {
       await updateVehicle.mutateAsync({
         where: { id },
-        data: { notes: notesDraft },
+        data: { notes: { set: finalNotes } },
       });
       notifications.show({ title: "Notas salvas!", message: "", color: "green" });
       setNotesEditing(false);
+      setNewNoteText("");
       refetch();
     } catch (e) {
       console.error(e);
@@ -346,10 +351,10 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       // Checar KM
       if (r.nextKm && !r.ignored) {
         const diffKm = r.nextKm - vehicle.currentKm;
-        if (diffKm <= 0)        { status = "overdue";  reason = "km"; }
+        if (diffKm <= 0) { status = "overdue"; reason = "km"; }
         else if (diffKm <= 500) { status = "critical"; reason = "km"; }
-        else if (diffKm <= 1000){ status = "warning";  reason = "km"; }
-        else if (diffKm <= 2000){ status = "notice";   reason = "km"; }
+        else if (diffKm <= 1000) { status = "warning"; reason = "km"; }
+        else if (diffKm <= 2000) { status = "notice"; reason = "km"; }
       }
 
       // Checar Data (sobrescreve apenas se mais grave)
@@ -357,10 +362,10 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         const nextD = new Date(r.nextDate);
         const diffDays = (nextD.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
         let dateStatus: AlertStatus = null;
-        if (diffDays <= 0)        dateStatus = "overdue";
-        else if (diffDays <= 10)  dateStatus = "critical";
-        else if (diffDays <= 30)  dateStatus = "warning";
-        else if (diffDays <= 90)  dateStatus = "notice";
+        if (diffDays <= 0) dateStatus = "overdue";
+        else if (diffDays <= 10) dateStatus = "critical";
+        else if (diffDays <= 30) dateStatus = "warning";
+        else if (diffDays <= 90) dateStatus = "notice";
 
         const severity = (s: AlertStatus) =>
           s === "overdue" ? 4 : s === "critical" ? 3 : s === "warning" ? 2 : s === "notice" ? 1 : 0;
@@ -380,7 +385,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   });
 
   const overdueRecords = latestByCategory.filter(r => r._alertStatus === "overdue" && !r.ignored);
-  
+
   // 3 próximas a vencer (excluindo vencidas e ignoradas), ordenadas por urgência
   const upcoming = latestByCategory
     .filter(r => r._alertStatus && r._alertStatus !== "overdue" && !r.ignored)
