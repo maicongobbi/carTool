@@ -24,6 +24,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   vehicles      Vehicle[]
+  theme         String    @default("light")
 }
 
 model Session {
@@ -77,7 +78,7 @@ model Vehicle {
   initialKm             Int
   currentKm             Int
   fipeCode              String?
-  notes                 String?
+  notes                 String[]
   userId                String
   user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   technicalInfos        TechnicalInfo[]

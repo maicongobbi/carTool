@@ -2,6 +2,7 @@
 
 import { useFindUniqueVehicle, useUpdateVehicle, useCreateMaintenanceRecord, useUpdateMaintenanceRecord } from "@/app/lib/hooks";
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
@@ -18,8 +19,10 @@ import {
   Stack,
   Text,
   TextInput,
+  Textarea,
   Title,
   Alert,
+  Tooltip,
 } from "@mantine/core";
 import { supabase } from "@/app/lib/supabase-client";
 import { DatePickerInput } from "@mantine/dates";
@@ -32,11 +35,13 @@ import {
   IconChevronUp,
   IconCoin,
   IconGauge,
+  IconNote,
   IconPlus,
   IconSearch,
   IconSettings,
   IconTag,
   IconTool,
+  IconTrash,
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -98,6 +103,12 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<"list" | "category">("list");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+  // Notes state
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesDraft, setNotesDraft] = useState<string[]>([]);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const handleOpenDetails = (record: any) => {
     setSelectedRecord(record);
@@ -254,6 +265,40 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       console.error(e);
     } finally {
       setSavingKm(false);
+    }
+  };
+
+  const handleOpenNotes = () => {
+    setNotesDraft([...(vehicle?.notes ?? [])]);
+    setNewNoteText("");
+    setNotesEditing(true);
+  };
+
+  const handleAddNote = () => {
+    const trimmed = newNoteText.trim();
+    if (!trimmed) return;
+    setNotesDraft((prev) => [...prev, trimmed]);
+    setNewNoteText("");
+  };
+
+  const handleRemoveNote = (index: number) => {
+    setNotesDraft((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      await updateVehicle.mutateAsync({
+        where: { id },
+        data: { notes: notesDraft },
+      });
+      notifications.show({ title: "Notas salvas!", message: "", color: "green" });
+      setNotesEditing(false);
+      refetch();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -490,6 +535,105 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
             Atualizar
           </Button>
         </Group>
+
+        <Divider my="md" label="Notas" />
+
+        {/* Seção de Notas */}
+        {!notesEditing ? (
+          <Stack gap="xs">
+            {vehicle.notes.length === 0 ? (
+              <Text c="dimmed" size="sm" fs="italic">Nenhuma nota cadastrada.</Text>
+            ) : (
+              vehicle.notes.map((note, i) => (
+                <Group key={i} gap="xs" align="flex-start" wrap="nowrap"
+                  style={{
+                    borderLeft: "3px solid var(--mantine-color-blue-4)",
+                    paddingLeft: "var(--mantine-spacing-xs)",
+                  }}
+                >
+                  <IconNote size={14} color="var(--mantine-color-blue-5)" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Text size="sm" style={{ flex: 1, whiteSpace: "pre-wrap" }}>{note}</Text>
+                </Group>
+              ))
+            )}
+            <Group justify="flex-end" mt={4}>
+              <Button
+                size="xs"
+                variant="subtle"
+                leftSection={<IconNote size={14} />}
+                onClick={handleOpenNotes}
+              >
+                {vehicle.notes.length === 0 ? "Adicionar notas" : "Editar notas"}
+              </Button>
+            </Group>
+          </Stack>
+        ) : (
+          <Stack gap="sm">
+            {notesDraft.map((note, i) => (
+              <Group key={i} gap="xs" align="flex-start" wrap="nowrap">
+                <Textarea
+                  value={note}
+                  onChange={(e) => {
+                    const updated = [...notesDraft];
+                    updated[i] = e.currentTarget.value;
+                    setNotesDraft(updated);
+                  }}
+                  autosize
+                  minRows={1}
+                  style={{ flex: 1 }}
+                  size="sm"
+                />
+                <Tooltip label="Remover nota">
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    mt={4}
+                    onClick={() => handleRemoveNote(i)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            ))}
+
+            <Group gap="xs" align="flex-end">
+              <Textarea
+                placeholder="Nova nota..."
+                value={newNoteText}
+                onChange={(e) => setNewNoteText(e.currentTarget.value)}
+                autosize
+                minRows={1}
+                style={{ flex: 1 }}
+                size="sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddNote();
+                  }
+                }}
+              />
+              <Tooltip label="Adicionar nota (Enter)">
+                <ActionIcon variant="light" onClick={handleAddNote} disabled={!newNoteText.trim()} mb={1}>
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+
+            <Group justify="flex-end" gap="xs" mt={4}>
+              <Button
+                size="xs"
+                variant="subtle"
+                onClick={() => setNotesEditing(false)}
+                disabled={savingNotes}
+              >
+                Cancelar
+              </Button>
+              <Button size="xs" onClick={handleSaveNotes} loading={savingNotes}>
+                Salvar notas
+              </Button>
+            </Group>
+          </Stack>
+        )}
       </Card>
 
       {/* ─── Plano de Manutenção (Referência) ─── */}

@@ -13,7 +13,7 @@ export type VehicleInput = {
   initialKm: number;
   currentKm?: number;
   fipeCode?: string;
-  notes?: string;
+  notes?: string[];
 };
 
 async function getSession() {

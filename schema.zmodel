@@ -30,6 +30,9 @@ model User {
   // Relacionamento com veículos no ZenStack (multi-tenancy)
   vehicles      Vehicle[]
 
+  // Preferência de tema (light | dark)
+  theme         String   @default("light")
+
   // O próprio usuário pode ler ou atualizar o seu perfil
   @@allow('read,update', auth() == this)
 }
@@ -94,7 +97,7 @@ model Vehicle {
   initialKm     Int
   currentKm     Int
   fipeCode      String?
-  notes         String?
+  notes         String[]
 
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)

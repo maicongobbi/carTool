@@ -54,6 +54,10 @@ const metadata: ModelMeta = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'user',
+                }, theme: {
+                    name: "theme",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": "light" }] }],
                 },
             }, uniqueConstraints: {
                 id: {
@@ -266,7 +270,7 @@ const metadata: ModelMeta = {
                 }, notes: {
                     name: "notes",
                     type: "String",
-                    isOptional: true,
+                    isArray: true,
                 }, userId: {
                     name: "userId",
                     type: "String",
