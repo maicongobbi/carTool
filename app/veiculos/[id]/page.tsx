@@ -111,6 +111,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   // Suggested next values (editable)
   const [suggestedNextKm, setSuggestedNextKm] = useState<number | string>("");
   const [suggestedNextDate, setSuggestedNextDate] = useState<Date | null>(null);
+  const [savingPrediction, setSavingPrediction] = useState(false);
 
   const updateRecord = useUpdateMaintenanceRecord();
 
@@ -197,6 +198,33 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       notifications.show({ title: "Erro", message: "Não foi possível salvar as alterações.", color: "red" });
     } finally {
       setSavingKmEdit(false);
+    }
+  };
+
+  const handleSavePrediction = async () => {
+    if (!selectedRecord) return;
+    setSavingPrediction(true);
+    try {
+      let nextDate: string | null = null;
+      if (suggestedNextDate) {
+        const nd = new Date(suggestedNextDate);
+        nd.setHours(12, 0, 0, 0);
+        nextDate = nd.toISOString();
+      }
+      const nextKm = suggestedNextKm ? Number(suggestedNextKm) : null;
+
+      await updateRecord.mutateAsync({
+        where: { id: selectedRecord.id },
+        data: { nextKm, nextDate },
+      });
+      notifications.show({ title: "Previsão atualizada!", message: "", color: "green" });
+      setSelectedRecord({ ...selectedRecord, nextKm, nextDate });
+      refetch();
+    } catch (e) {
+      console.error(e);
+      notifications.show({ title: "Erro", message: "Não foi possível salvar a previsão.", color: "red" });
+    } finally {
+      setSavingPrediction(false);
     }
   };
 
@@ -1002,6 +1030,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         setSuggestedNextKm={setSuggestedNextKm}
         suggestedNextDate={suggestedNextDate}
         setSuggestedNextDate={setSuggestedNextDate}
+        savingPrediction={savingPrediction}
+        onSavePrediction={handleSavePrediction}
         savingDone={savingDone}
         onSaveDone={handleSaveDone}
       />

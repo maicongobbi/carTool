@@ -49,6 +49,8 @@ interface MaintenanceDetailsModalProps {
   setSuggestedNextKm: (v: number | string) => void;
   suggestedNextDate: Date | null;
   setSuggestedNextDate: (v: Date | null) => void;
+  savingPrediction: boolean;
+  onSavePrediction: () => void;
   savingDone: boolean;
   onSaveDone: () => void;
 }
@@ -81,6 +83,8 @@ export function MaintenanceDetailsModal({
   setSuggestedNextKm,
   suggestedNextDate,
   setSuggestedNextDate,
+  savingPrediction,
+  onSavePrediction,
   savingDone,
   onSaveDone,
 }: MaintenanceDetailsModalProps) {
@@ -90,6 +94,14 @@ export function MaintenanceDetailsModal({
   const dateChanged =
     !!editDate && new Date(editDate).toDateString() !== new Date(record.date).toDateString();
   const hasChanges = kmChanged || dateChanged;
+
+  const normalizedSuggestedKm = suggestedNextKm === "" ? null : Number(suggestedNextKm);
+  const normalizedRecordKm = record.nextKm ?? null;
+  const predictionKmChanged = normalizedSuggestedKm !== normalizedRecordKm;
+  const normalizedSuggestedDate = suggestedNextDate ? new Date(suggestedNextDate).toDateString() : null;
+  const normalizedRecordDate = record.nextDate ? new Date(record.nextDate).toDateString() : null;
+  const predictionDateChanged = normalizedSuggestedDate !== normalizedRecordDate;
+  const hasPredictionChanges = predictionKmChanged || predictionDateChanged;
 
   return (
     <Modal opened={opened} onClose={onClose} title="Detalhes da Manutenção" size="md">
@@ -195,6 +207,17 @@ export function MaintenanceDetailsModal({
                 onChange={setSuggestedNextKm}
               />
             </Group>
+            <Button
+              size="xs"
+              variant="light"
+              mt="sm"
+              leftSection={<IconCheck size={14} />}
+              loading={savingPrediction}
+              onClick={onSavePrediction}
+              disabled={!hasPredictionChanges}
+            >
+              Salvar previsão
+            </Button>
           </Alert>
         )}
 
