@@ -105,6 +105,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   const [savingDone, setSavingDone] = useState(false);
   const [ignoreRecord, setIgnoreRecord] = useState(false);
   const [savingIgnore, setSavingIgnore] = useState(false);
+  const [editDate, setEditDate] = useState<Date | null>(null);
   const [editKm, setEditKm] = useState<number | string>("");
   const [savingKmEdit, setSavingKmEdit] = useState(false);
   // Suggested next values (editable)
@@ -134,6 +135,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
     setDoneCost("");
     setDoneObs("");
     setDoneFiles([]);
+    setEditDate(new Date(record.date));
     setEditKm(record.kmAtService);
 
     // Pre-fill suggested next values (editable)

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -18,13 +17,14 @@ import {
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { IconCheck, IconExternalLink, IconFile, IconUpload } from "@tabler/icons-react";
-import { formatLocalDate } from "@/app/lib/date-utils";
 
 interface MaintenanceDetailsModalProps {
   opened: boolean;
   onClose: () => void;
   record: any;
-  // Edit km
+  // Edit data/km
+  editDate: Date | null;
+  setEditDate: (v: Date | null) => void;
   editKm: number | string;
   setEditKm: (v: number | string) => void;
   savingKmEdit: boolean;
@@ -57,6 +57,8 @@ export function MaintenanceDetailsModal({
   opened,
   onClose,
   record,
+  editDate,
+  setEditDate,
   editKm,
   setEditKm,
   savingKmEdit,
@@ -84,6 +86,11 @@ export function MaintenanceDetailsModal({
 }: MaintenanceDetailsModalProps) {
   if (!record) return null;
 
+  const kmChanged = editKm !== "" && Number(editKm) !== record.kmAtService;
+  const dateChanged =
+    !!editDate && new Date(editDate).toDateString() !== new Date(record.date).toDateString();
+  const hasChanges = kmChanged || dateChanged;
+
   return (
     <Modal opened={opened} onClose={onClose} title="Detalhes da Manutenção" size="md">
       <Stack>
@@ -97,34 +104,26 @@ export function MaintenanceDetailsModal({
         </Group>
 
         {/* Dados */}
-        <Group grow>
+        <Group grow align="flex-end">
           <Stack gap={2}>
             <Text size="xs" c="dimmed">Data do Serviço</Text>
-            <Text fw={500}>{formatLocalDate(record.date)}</Text>
+            <DatePickerInput
+              valueFormat="DD/MM/YYYY"
+              size="xs"
+              value={editDate}
+              onChange={(val) => setEditDate(val as Date | null)}
+            />
           </Stack>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">KM no Ato</Text>
-            <Group gap={4} wrap="nowrap" align="center">
-              <NumberInput
-                hideControls
-                suffix=" km"
-                size="xs"
-                value={editKm}
-                onChange={setEditKm}
-                styles={{ input: { fontWeight: 500 } }}
-              />
-              <ActionIcon
-                variant="filled"
-                color="blue"
-                size="md"
-                loading={savingKmEdit}
-                onClick={onSaveKm}
-                disabled={!editKm || Number(editKm) === record.kmAtService}
-                title="Salvar KM"
-              >
-                <IconCheck size={14} />
-              </ActionIcon>
-            </Group>
+            <NumberInput
+              hideControls
+              suffix=" km"
+              size="xs"
+              value={editKm}
+              onChange={setEditKm}
+              styles={{ input: { fontWeight: 500 } }}
+            />
           </Stack>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">Custo</Text>
@@ -135,6 +134,16 @@ export function MaintenanceDetailsModal({
             </Text>
           </Stack>
         </Group>
+
+        <Button
+          size="xs"
+          leftSection={<IconCheck size={14} />}
+          loading={savingKmEdit}
+          onClick={onSaveKm}
+          disabled={!hasChanges || !editKm || !editDate}
+        >
+          Salvar alterações
+        </Button>
 
         {record.observations && (
           <Stack gap={2}>
