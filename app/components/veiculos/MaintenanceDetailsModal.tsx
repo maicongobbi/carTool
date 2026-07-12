@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -16,13 +17,18 @@ import {
   Textarea,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { IconExternalLink, IconFile, IconUpload } from "@tabler/icons-react";
+import { IconCheck, IconExternalLink, IconFile, IconUpload } from "@tabler/icons-react";
 import { formatLocalDate } from "@/app/lib/date-utils";
 
 interface MaintenanceDetailsModalProps {
   opened: boolean;
   onClose: () => void;
   record: any;
+  // Edit km
+  editKm: number | string;
+  setEditKm: (v: number | string) => void;
+  savingKmEdit: boolean;
+  onSaveKm: () => void;
   // Ignore
   savingIgnore: boolean;
   onIgnore: () => void;
@@ -51,6 +57,10 @@ export function MaintenanceDetailsModal({
   opened,
   onClose,
   record,
+  editKm,
+  setEditKm,
+  savingKmEdit,
+  onSaveKm,
   savingIgnore,
   onIgnore,
   markAsDone,
@@ -94,7 +104,29 @@ export function MaintenanceDetailsModal({
           </Stack>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">KM no Ato</Text>
-            <Text fw={500}>{record.kmAtService.toLocaleString("pt-BR")} km</Text>
+            <Group gap={4} wrap="nowrap" align="center">
+              <NumberInput
+                hideControls
+                suffix=" km"
+                size="xs"
+                value={editKm}
+                onChange={setEditKm}
+                styles={{ input: { fontWeight: 500 } }}
+              />
+              {Number(editKm) !== record.kmAtService && (
+                <ActionIcon
+                  variant="filled"
+                  color="blue"
+                  size="md"
+                  loading={savingKmEdit}
+                  onClick={onSaveKm}
+                  disabled={!editKm}
+                  title="Salvar KM"
+                >
+                  <IconCheck size={14} />
+                </ActionIcon>
+              )}
+            </Group>
           </Stack>
           <Stack gap={2}>
             <Text size="xs" c="dimmed">Custo</Text>

@@ -105,6 +105,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   const [savingDone, setSavingDone] = useState(false);
   const [ignoreRecord, setIgnoreRecord] = useState(false);
   const [savingIgnore, setSavingIgnore] = useState(false);
+  const [editKm, setEditKm] = useState<number | string>("");
+  const [savingKmEdit, setSavingKmEdit] = useState(false);
   // Suggested next values (editable)
   const [suggestedNextKm, setSuggestedNextKm] = useState<number | string>("");
   const [suggestedNextDate, setSuggestedNextDate] = useState<Date | null>(null);
@@ -132,6 +134,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
     setDoneCost("");
     setDoneObs("");
     setDoneFiles([]);
+    setEditKm(record.kmAtService);
 
     // Pre-fill suggested next values (editable)
     const techInfo = (vehicle as any)?.technicalInfos?.find((t: any) => t.id === record.technicalInfoId);
@@ -170,6 +173,27 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       console.error(e);
     } finally {
       setSavingIgnore(false);
+    }
+  };
+
+  const handleSaveKm = async () => {
+    if (!selectedRecord || !editKm) return;
+    const km = Number(editKm);
+    if (km === selectedRecord.kmAtService) return;
+    setSavingKmEdit(true);
+    try {
+      await updateRecord.mutateAsync({
+        where: { id: selectedRecord.id },
+        data: { kmAtService: km },
+      });
+      notifications.show({ title: "KM atualizado!", message: "", color: "green" });
+      setSelectedRecord({ ...selectedRecord, kmAtService: km });
+      refetch();
+    } catch (e) {
+      console.error(e);
+      notifications.show({ title: "Erro", message: "Não foi possível atualizar o KM.", color: "red" });
+    } finally {
+      setSavingKmEdit(false);
     }
   };
 
@@ -951,6 +975,10 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         opened={detailsModalOpened}
         onClose={closeDetailsModal}
         record={selectedRecord}
+        editKm={editKm}
+        setEditKm={setEditKm}
+        savingKmEdit={savingKmEdit}
+        onSaveKm={handleSaveKm}
         savingIgnore={savingIgnore}
         onIgnore={handleIgnore}
         markAsDone={markAsDone}
