@@ -113,19 +113,17 @@ export function MaintenanceDetailsModal({
                 onChange={setEditKm}
                 styles={{ input: { fontWeight: 500 } }}
               />
-              {Number(editKm) !== record.kmAtService && (
-                <ActionIcon
-                  variant="filled"
-                  color="blue"
-                  size="md"
-                  loading={savingKmEdit}
-                  onClick={onSaveKm}
-                  disabled={!editKm}
-                  title="Salvar KM"
-                >
-                  <IconCheck size={14} />
-                </ActionIcon>
-              )}
+              <ActionIcon
+                variant="filled"
+                color="blue"
+                size="md"
+                loading={savingKmEdit}
+                onClick={onSaveKm}
+                disabled={!editKm || Number(editKm) === record.kmAtService}
+                title="Salvar KM"
+              >
+                <IconCheck size={14} />
+              </ActionIcon>
             </Group>
           </Stack>
           <Stack gap={2}>
