@@ -179,21 +179,22 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
   };
 
   const handleSaveKm = async () => {
-    if (!selectedRecord || !editKm) return;
+    if (!selectedRecord || !editKm || !editDate) return;
     const km = Number(editKm);
-    if (km === selectedRecord.kmAtService) return;
+    const recordDate = new Date(editDate);
+    recordDate.setHours(12, 0, 0, 0);
     setSavingKmEdit(true);
     try {
       await updateRecord.mutateAsync({
         where: { id: selectedRecord.id },
-        data: { kmAtService: km },
+        data: { kmAtService: km, date: recordDate.toISOString() },
       });
-      notifications.show({ title: "KM atualizado!", message: "", color: "green" });
-      setSelectedRecord({ ...selectedRecord, kmAtService: km });
+      notifications.show({ title: "Manutenção atualizada!", message: "", color: "green" });
+      setSelectedRecord({ ...selectedRecord, kmAtService: km, date: recordDate.toISOString() });
       refetch();
     } catch (e) {
       console.error(e);
-      notifications.show({ title: "Erro", message: "Não foi possível atualizar o KM.", color: "red" });
+      notifications.show({ title: "Erro", message: "Não foi possível salvar as alterações.", color: "red" });
     } finally {
       setSavingKmEdit(false);
     }
@@ -977,6 +978,8 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
         opened={detailsModalOpened}
         onClose={closeDetailsModal}
         record={selectedRecord}
+        editDate={editDate}
+        setEditDate={setEditDate}
         editKm={editKm}
         setEditKm={setEditKm}
         savingKmEdit={savingKmEdit}
