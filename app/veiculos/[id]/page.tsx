@@ -4,7 +4,7 @@ import { useCreateMaintenanceRecord, useFindUniqueVehicle, useUpdateMaintenanceR
 import { formatLocalDate } from "@/app/lib/date-utils";
 import { useSession } from "@/app/lib/auth-client";
 import { transferVehicle } from "@/app/lib/actions/vehicle";
-import { supabase } from "@/app/lib/supabase-client";
+import { uploadAttachment } from "@/app/lib/upload-attachment";
 import {
   ActionIcon,
   Checkbox,
@@ -263,24 +263,7 @@ export default function VeiculoPage({ params }: { params: Promise<{ id: string }
       const uploadedUrls: string[] = [];
       if (doneFiles.length > 0) {
         for (const file of doneFiles) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${vehicle!.id}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('maintenance-attachments')
-            .upload(filePath, file);
-
-          if (uploadError) {
-            console.error("Upload error", uploadError);
-            throw new Error("Erro ao fazer upload do anexo");
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('maintenance-attachments')
-            .getPublicUrl(filePath);
-
-          uploadedUrls.push(publicUrl);
+          uploadedUrls.push(await uploadAttachment(vehicle!.id, file));
         }
       }
 

@@ -14,7 +14,7 @@ import {
   FileInput,
 } from "@mantine/core";
 import { IconUpload, IconBulb } from "@tabler/icons-react";
-import { supabase } from "@/app/lib/supabase-client";
+import { uploadAttachment } from "@/app/lib/upload-attachment";
 import { DatePickerInput } from "@mantine/dates";
 import { useForm } from "@mantine/form";
 import { useState } from "react";
@@ -108,24 +108,7 @@ export function MaintenanceRecordForm({
       
       if (files.length > 0) {
         for (const file of files) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const filePath = `${vehicleId}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('maintenance-attachments')
-            .upload(filePath, file);
-
-          if (uploadError) {
-             console.error("Upload error", uploadError);
-             throw new Error("Erro ao fazer upload do anexo");
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('maintenance-attachments')
-            .getPublicUrl(filePath);
-
-          uploadedUrls.push(publicUrl);
+          uploadedUrls.push(await uploadAttachment(vehicleId, file));
         }
       }
 

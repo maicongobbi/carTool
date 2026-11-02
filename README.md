@@ -11,7 +11,7 @@ Sistema full-stack avançado para gestão de manutenções veiculares, controle 
 * **Backend & ORM:** [Node.js](https://nodejs.org/) + [Prisma](https://www.prisma.io/)
 * **Camada de Acesso (Policy Engine):** [ZenStack](https://zenstack.dev/) (Segurança baseada em Schema)
 * **Autenticação:** [BetterAuth](https://www.better-auth.com/) com integração **Google (Gmail)**
-* **Banco de Dados & Storage:** [Supabase](https://supabase.com/) (PostgreSQL + S3 Bucket para notas fiscais)
+* **Banco de Dados & Storage:** [Neon](https://neon.com/) (Lakebase Postgres + Object Storage para notas fiscais)
 
 ---
 
@@ -20,12 +20,15 @@ Sistema full-stack avançado para gestão de manutenções veiculares, controle 
 Para executar este projeto localmente, você precisará configurar suas variáveis de ambiente. Crie um arquivo `.env` na raiz do projeto e adicione as seguintes chaves, preenchendo com suas credenciais:
 
 ```bash
-# Prisma / Supabase DB
-DATABASE_URL="URL_DE_CONEXAO_POSTGRESQL_DO_SUPABASE"
+# Neon: `neon link` / `neon deploy` preenchem estas variáveis automaticamente
+DATABASE_URL="URL_POOLED_DO_NEON"
+DATABASE_URL_UNPOOLED="URL_DIRETA_DO_NEON" # usada pelo Prisma nas migrações
 
-# Supabase Storage
-SUPABASE_URL="URL_DO_SEU_PROJETO_SUPABASE"
-SUPABASE_ANON_KEY="CHAVE_ANON_DO_SUPABASE"
+# Neon Object Storage (bucket maintenance-attachments, declarado em neon.ts)
+AWS_ACCESS_KEY_ID="..."
+AWS_SECRET_ACCESS_KEY="..."
+AWS_ENDPOINT_URL_S3="..."
+AWS_REGION="us-east-2"
 
 # Autenticação (BetterAuth / Google)
 GOOGLE_CLIENT_ID="SEU_GOOGLE_CLIENT_ID"
@@ -58,7 +61,7 @@ NEXTAUTH_URL="http://localhost:3000"
 ### 📝 Registro de Atividades
 * Lançamento de manutenções realizadas (baseadas em referências ou avulsas).
 * **Campos:** Data, KM no ato, valor gasto, previsão da próxima revisão.
-* **Anexos:** Upload de foto de comprovantes ou Notas Fiscais (Supabase Storage).
+* **Anexos:** Upload de foto de comprovantes ou Notas Fiscais (Neon Object Storage).
 * **Categorização:**
     * Arrefecimento, Óleo, Elétrica, Motor, Suspensão, Pneus, Impostos (IPVA/Licenciamento), Seguros e Outros.
 
